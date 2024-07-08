@@ -64,11 +64,11 @@ class triggerAndSkim(Module):
             passTriEle = False
             passTriMu = event.HLT_TripleMu_10_5_5_DZ or event.HLT_TripleMu_12_10_5
         elif self.era == 2023 : #FIXME check if some were prescaled
-            passSingleEle = event.HLT_Ele30_WPTight_Gsf or event.HLT_Ele32_WPTight_Gsf #FIXME: Ele30 was still prescaled?
+            passSingleEle = event.HLT_Ele30_WPTight_Gsf # https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIIISummary https://twiki.cern.ch/twiki/bin/view/CMS/MuonHLT2023
             passSingleMu = event.HLT_IsoMu24
-            passDiEle = event.HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL or event.HLT_DoubleEle25_CaloIdL_MW
+            passDiEle = event.HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL
             passDiMu = event.HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8
-            passMuEle = event.HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL or event.HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ or event.HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ or event.HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ or event.HLT_DiMu9_Ele9_CaloIdL_TrackIdL_DZ or event.HLT_Mu8_DiEle12_CaloIdL_TrackIdL_DZ
+            passMuEle = event.HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL
             passTriEle = False
             passTriMu = event.HLT_TripleMu_10_5_5_DZ or event.HLT_TripleMu_12_10_5
         else:
