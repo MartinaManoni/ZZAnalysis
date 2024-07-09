@@ -235,3 +235,13 @@ def puWeight(era, data_tag):
             json = "%s/src/ZZAnalysis/NanoAnalysis/data/puWeights_2022_Summer22EE.json.gz" % os.environ['CMSSW_BASE']
             key = "Collisions2022_359022_362760_eraEFG_GoldenJson"
         return puWeightProducer_corrlib(json, key)
+
+    elif era == 2023 :
+        from ZZAnalysis.NanoAnalysis.modules.puWeightProducer_corrlib import puWeightProducer as puWeightProducer_corrlib
+        if "pre_BPix" in data_tag :
+            json = "%s/src/ZZAnalysis/NanoAnalysis/data/puWeights_2023_Summer23preBPix.json.gz" % os.environ['CMSSW_BASE']
+            key = "Collisions2023_366403_369802_eraBC_GoldenJson"
+        else :
+            json = "%s/src/ZZAnalysis/NanoAnalysis/data/puWeights_2023_Summer23postBPix.json.gz" % os.environ['CMSSW_BASE']
+            key = "Collisions2023_369803_370790_eraD_GoldenJson"
+        return puWeightProducer_corrlib(json, key)
