@@ -132,6 +132,60 @@ LeptonSFHelper::LeptonSFHelper(std::string const &data_tag)
       h_Ele_Reco_lowPT_2022 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
    }
 
+   // 2023 preBPix
+   if(data_tag.find("pre_BPix") != std::string::npos)
+   {  //ID - for now using 2022 postEE
+      std::cout<<"ID - for now using 2022 postEE"<<std::endl;
+      TString fipEleNotCracks_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/SF2D_postEE_RMS.root");
+      root_file = TFile::Open(fipEleNotCracks_2023.Data(),"READ");
+      h_Ele_notCracks_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+
+      TString fipEleCracks_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/SF2D_postEEgap_RMS.root");
+      root_file = TFile::Open(fipEleCracks_2023.Data(),"READ");
+      h_Ele_Cracks_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+
+      //RECO - SFs for Electrons in 2023PromptC from EG - https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammSFandSSRun3
+      std::cout<<"RECO - SFs for Electrons in 2023PromptC from EG"<<std::endl;
+      TString fipEleReco_highPt_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/egammaEffi_ptAbove75.txt_EGM2D_2023preBPix.root");
+      root_file = TFile::Open(fipEleReco_highPt_2023.Data(),"READ");
+      h_Ele_Reco_highPT_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+
+      TString fipEleReco_midPt_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/egammaEffi_ptBelow75.txt_EGM2D_2023preBPix.root");
+      root_file = TFile::Open(fipEleReco_midPt_2023.Data(),"READ");
+      h_Ele_Reco_midPT_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+
+      TString fipEleReco_lowPt_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/egammaEffi_ptBelow20.txt_EGM2D_2023preBPix.root");
+      root_file = TFile::Open(fipEleReco_lowPt_2023.Data(),"READ");
+      h_Ele_Reco_lowPT_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+   }
+   // 2023 postBPix
+   else
+   {  //ID - for now using 2022 postEE
+      std::cout<<"ID - for now using 2022 postEE"<<std::endl;
+      TString fipEleNotCracks_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/SF2D_postEE_RMS.root");
+      root_file = TFile::Open(fipEleNotCracks_2023.Data(),"READ");
+      h_Ele_notCracks_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+
+      TString fipEleCracks_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/SF2D_postEEgap_RMS.root");
+      root_file = TFile::Open(fipEleCracks_2023.Data(),"READ");
+      h_Ele_Cracks_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+
+      //RECO - SFs for Electrons in 2023PromptD from EG - https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammSFandSSRun3
+      std::cout<<"RECO - SFs for Electrons in 2023PromptD from EG"<<std::endl;
+      TString fipEleReco_highPt_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/egammaEffi_ptAbove75.txt_EGM2D_2023postBPix.root");
+      root_file = TFile::Open(fipEleReco_highPt_2023.Data(),"READ");
+      h_Ele_Reco_highPT_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+
+      TString fipEleReco_midPt_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/egammaEffi_ptBelow75.txt_EGM2D_2023postBPix.root");
+      root_file = TFile::Open(fipEleReco_midPt_2023.Data(),"READ");
+      h_Ele_Reco_midPT_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+
+      TString fipEleReco_lowPt_2023 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/egammaEffi_ptBelow20.txt_EGM2D_2023postBPix.root");
+      root_file = TFile::Open(fipEleReco_lowPt_2023.Data(),"READ");
+      h_Ele_Reco_lowPT_2023 = (TH2F*) root_file->Get("EGamma_SF2D")->Clone();
+   }
+
+
    // 2016 Muons
    TString fipMu_2016 = Form("$CMSSW_BASE/src/ZZAnalysis/AnalysisStep/data/LeptonEffScaleFactors/final_HZZ_SF_2016UL_mupogsysts_newLoose.root");
    root_file = TFile::Open(fipMu_2016.Data(),"READ");
@@ -232,9 +286,20 @@ float LeptonSFHelper::getSF(int year, int flav, float pt, float eta, float SCeta
             RecoSF = h_Ele_Reco_highPT_2022->GetBinContent(h_Ele_Reco_highPT_2022->GetXaxis()->FindBin(SCeta),h_Ele_Reco_highPT_2022->GetYaxis()->FindBin(std::min(pt,499.f)));
          }
       }
-      else if(year > 2022)
+      else if(year == 2023)
       {
-         RecoSF  = 1.;
+         if(pt < 20.)
+         {
+            RecoSF = h_Ele_Reco_lowPT_2023->GetBinContent(h_Ele_Reco_lowPT_2023->GetXaxis()->FindBin(SCeta),h_Ele_Reco_lowPT_2023->GetYaxis()->FindBin(15.));
+         }
+         else if(pt < 75.)
+         {
+            RecoSF = h_Ele_Reco_midPT_2023->GetBinContent(h_Ele_Reco_midPT_2023->GetXaxis()->FindBin(SCeta),h_Ele_Reco_midPT_2023->GetYaxis()->FindBin(std::min(pt,75.f)));
+         }
+         else
+         {
+            RecoSF = h_Ele_Reco_highPT_2023->GetBinContent(h_Ele_Reco_highPT_2023->GetXaxis()->FindBin(SCeta),h_Ele_Reco_highPT_2023->GetYaxis()->FindBin(std::min(pt,499.f)));
+         }
       }
       else
       {
@@ -290,9 +355,16 @@ float LeptonSFHelper::getSF(int year, int flav, float pt, float eta, float SCeta
             SelSF = h_Ele_notCracks_2022->GetBinContent(h_Ele_notCracks_2022->FindFixBin(SCeta, std::min(pt,499.f)));
          }
       }
-      else if (year > 2022)
+      else if (year == 2023)
       {
-         SelSF  = 1.;
+         if(isCrack)
+         {
+            SelSF = h_Ele_Cracks_2023->GetBinContent(h_Ele_Cracks_2023->FindFixBin(SCeta, std::min(pt,499.f)));
+         }
+         else
+         {
+            SelSF = h_Ele_notCracks_2023->GetBinContent(h_Ele_notCracks_2023->FindFixBin(SCeta, std::min(pt,499.f)));
+         }
       }
       else 
       {
@@ -322,7 +394,7 @@ float LeptonSFHelper::getSF(int year, int flav, float pt, float eta, float SCeta
       {
          SelSF = h_Mu_SF_2022->GetBinContent(h_Mu_SF_2022->GetXaxis()->FindBin(eta),h_Mu_SF_2022->GetYaxis()->FindBin(std::min(pt,199.f))); //last bin contains the overflow        
       }
-      else if (year > 2022)
+      else if (year == 2023)
       {
          SelSF  = 1.; // FIXME2022 not yet implemented
       }
@@ -405,10 +477,23 @@ float LeptonSFHelper::getSFError(int year, int flav, float pt, float eta, float 
             RecoSF_Unc = h_Ele_Reco_highPT_2022->GetBinError(h_Ele_Reco_highPT_2022->GetXaxis()->FindBin(SCeta),h_Ele_Reco_highPT_2022->GetYaxis()->FindBin(std::min(pt,499.f)));
          }
       }
-      else if(year > 2022)
+      else if(year == 2023)
       {
-         RecoSF =1.;
-         RecoSF_Unc=0.;
+         if(pt < 20.)
+         {
+            RecoSF = h_Ele_Reco_lowPT_2023->GetBinContent(h_Ele_Reco_lowPT_2023->GetXaxis()->FindBin(SCeta),h_Ele_Reco_lowPT_2023->GetYaxis()->FindBin(15.));// FIXME: the histogram contains 1 pt bin only
+            RecoSF_Unc = h_Ele_Reco_lowPT_2023->GetBinError(h_Ele_Reco_lowPT_2023->GetXaxis()->FindBin(SCeta),h_Ele_Reco_lowPT_2023->GetYaxis()->FindBin(15.));// FIXME: the histogram contains 1 pt bin only
+         }
+         else if(pt < 75.)
+         {
+            RecoSF = h_Ele_Reco_midPT_2023->GetBinContent(h_Ele_Reco_midPT_2023->GetXaxis()->FindBin(SCeta),h_Ele_Reco_midPT_2023->GetYaxis()->FindBin(std::min(pt,75.f)));
+            RecoSF_Unc = h_Ele_Reco_midPT_2023->GetBinError(h_Ele_Reco_midPT_2023->GetXaxis()->FindBin(SCeta),h_Ele_Reco_midPT_2023->GetYaxis()->FindBin(std::min(pt,75.f)));
+         }
+         else
+         {
+            RecoSF = h_Ele_Reco_highPT_2023->GetBinContent(h_Ele_Reco_highPT_2023->GetXaxis()->FindBin(SCeta),h_Ele_Reco_highPT_2023->GetYaxis()->FindBin(std::min(pt,499.f)));
+            RecoSF_Unc = h_Ele_Reco_highPT_2023->GetBinError(h_Ele_Reco_highPT_2023->GetXaxis()->FindBin(SCeta),h_Ele_Reco_highPT_2023->GetYaxis()->FindBin(std::min(pt,499.f)));
+         }
       }
       else
       {
@@ -470,10 +555,18 @@ float LeptonSFHelper::getSFError(int year, int flav, float pt, float eta, float 
             SelSF_Unc = h_Ele_notCracks_2022->GetBinError(h_Ele_notCracks_2022->FindFixBin(SCeta, std::min(pt,499.f)));
          }
       }
-      else if(year > 2022)
+      else if(year == 2023)
       {
-         SelSF =1.;
-         SelSF_Unc=0.;
+         if(isCrack)
+         {
+            SelSF = h_Ele_Cracks_2023->GetBinContent(h_Ele_Cracks_2023->FindFixBin(SCeta, std::min(pt,499.f)));
+            SelSF_Unc = h_Ele_Cracks_2023->GetBinError(h_Ele_Cracks_2023->FindFixBin(SCeta, std::min(pt,499.f)));
+         }
+         else
+         {
+            SelSF = h_Ele_notCracks_2023->GetBinContent(h_Ele_notCracks_2023->FindFixBin(SCeta, std::min(pt,499.f)));
+            SelSF_Unc = h_Ele_notCracks_2023->GetBinError(h_Ele_notCracks_2023->FindFixBin(SCeta, std::min(pt,499.f)));
+         }
       }
       else
       {
@@ -507,7 +600,7 @@ float LeptonSFHelper::getSFError(int year, int flav, float pt, float eta, float 
          SelSF = h_Mu_SF_2022->GetBinContent(h_Mu_SF_2022->GetXaxis()->FindBin(eta),h_Mu_SF_2022->GetYaxis()->FindBin(std::min(pt,199.f))); //last bin contains the overflow
          SelSF_Unc = h_Mu_Unc_2022->GetBinContent(h_Mu_Unc_2022->GetXaxis()->FindBin(eta),h_Mu_Unc_2022->GetYaxis()->FindBin(std::min(pt,199.f))); //last bin contains the overflow
       }
-      else if(year > 2022)
+      else if(year == 2023)
       {
          SelSF =1.;
          SelSF_Unc=0.;
