@@ -1,9 +1,3 @@
-###
-# Build Z and ZZ candidates.
-# ZZ candidates are stored as a nanoAOD collection, so that several candidates per event can be saved (for eg. ID optimization studies).
-# The index of the best ZZ candidate in each event is stored as bestCandIdx
-# Filter: only events with at least one ZZ candidate are kept
-###
 from __future__ import print_function
 from PhysicsTools.NanoAODTools.postprocessing.framework.eventloop import Module
 from PhysicsTools.NanoAODTools.postprocessing.framework.datamodel import Collection
@@ -14,7 +8,7 @@ from ROOT import Mela, SimpleParticle_t, SimpleParticleCollection_t, TVar, TLore
 from ctypes import c_float
 
 class StoreOption:
-    # Define which SR candidates should be stored:
+    # Define which SR candidates should be stored in the ZZCand branches collection.
     # BestCandOnly = only the best SR candidate in the event is retained. This is normally the default for production jobs.
     # AllSRCands   = keep all SR candidates passing the full selection cuts (including permutation of leptons)
     # AllWithRelaxedMuId = keep any SR candidate that can be made, even if leptons don't pass ID cuts (useful for ID cut optimization studies).
@@ -24,8 +18,24 @@ class StoreOption:
 
 class ZZFiller(Module):
 
-    def __init__(self, runMELA, bestCandByMELA, isMC, year, processCR, data_tag, addZL=False, debug=False):
-        print("***ZZFiller: isMC:", isMC, "year:", year, "data_tag:", data_tag, "bestCandByMELA:", bestCandByMELA, flush=True)
+    def __init__(self, runMELA, bestCandByMELA, isMC, year, data_tag, processCR=False, addZL=False, filter='Cands', debug=False):
+        """Build candidates:
+        -ZZCand: SR candidates. The index of the best ZZ candidate in each event is stored as bestCandIdx
+        -ZLLCand: CR candidates (SS, 3P1F, 2P2F, SIP CRs, with indices: ZZLLbestSSIdx, ZLLbest3P1FIdx, ZLLbest2P2FIdx, ZLLbestSIPCRIdx)
+        -ZLCand: onlly the index of the addi
+        -ZCand: Zs referenced in the above collections (note that when filters are applied, only events with at least one candidate in the above collections are retained)
+        Parameters:
+          runMELA: compute MELA KD
+          bestCandByMELA: True = select best candidate by KD; False = with best Z1/highest-pTsum Z2 
+          year: data taking year        
+          processCR: add ZLLCand CR collections
+          data_tag: subperiod or processing, e.g. "pre_EE" (currently unused)
+          addZL: add ZL CR
+          filter: 
+                  'Cands' = store only events with at least one ZZ, ZLL, or ZL candidate are kept
+                  '3L_20_10' = filter on events with 3 good leptons, pt1>20, pt2>10; useful for trigger studies
+        """
+        print("***ZZFiller: isMC:", isMC, "year:", year, "data_tag:", data_tag, "bestCandByMELA:", bestCandByMELA, "filter:", filter, "- This module filters events.",  flush=True)
         self.writeHistFile = False
         self.isMC = isMC
         self.year = year
@@ -42,11 +52,19 @@ class ZZFiller(Module):
 
         self.DATA_TAG = data_tag
 
+        self.noFilter, self.filterOnCands, self.filter_3L_20_10 = range(0,3)
+        self.filterType = self.noFilter
+        if filter == 'Cands' :
+            self.filterType = self.filterOnCands
+        elif filter == '3L_20_10' :
+            self.filterType = self.filter_3L_20_10
+        else :
+            raise ValueError("ZZFiller: filter =", filter, "not supported")
         self.DEBUG = debug
         self.ZmassValue = 91.1876;
 
         self.candsToStore = StoreOption.BestCandOnly # Only store the best candidate for the SR
-
+#        self.candsToStore = StoreOption.AllWithRelaxedMuId # Use this for ID optimization studies
 
         # Pre-selection of leptons to build Z and LL candidates.
         # Normally it is the full ID + iso if only the SR is considered, or the relaxed ID if CRs are also filled,
@@ -76,12 +94,16 @@ class ZZFiller(Module):
                           dict(name="isGlobal", sel=lambda l : l.isGlobal),  # Note: this is looser than nanoAOD presel.
                           dict(name="isTracker", sel=lambda l : l.isTracker),# Note: this is looser than nanoAOD presel.
                           dict(name="isTrackerArb", sel=lambda l : l.isTracker and l.nStations>0), # Arbitrated tracker muon. Note: this is looser than nanoAOD presel.
+                          dict(name="inTimeMuon", sel=lambda l : l.inTimeMuon), # 
                           ]
 
             # Add variable to store the worst value of a given quantity among the 4 leptons of a candidate, for optimization studies.
             # Worst is intended as lowest value (as for an MVA), unless the variable's name starts with "max".
             self.muonIDVars=[dict(name="maxsip3d", sel=lambda l : l.sip3d if (abs(l.dxy)<0.5 and abs(l.dz) < 1) else 999.), # dxy, dz cuts included with SIP
                              dict(name="maxpfRelIso03FsrCorr", sel=lambda l : l.pfRelIso03FsrCorr),
+                             dict(name="maxminiPFRelIso_all", sel=lambda l : l.miniPFRelIso_all),
+                             # Can also try: puppiIsoId, multiIsoId
+                             dict(name="mvaMuID", sel=lambda l : l.mvaMuID if (l.looseId and l.sip3d<4. and l.dxy<0.5 and l.dz < 1) else -2.), # additional presel required?
                              dict(name="mvaLowPt", sel=lambda l : l.mvaLowPt if (l.looseId and l.sip3d<4. and l.dxy<0.5 and l.dz < 1) else -2.), # additional presel required, cf: https://cmssdt.cern.ch/dxr/CMSSW/source/PhysicsTools/PatAlgos/plugins/PATMuonProducer.cc#1027-1046
                              ]
         if self.runMELA :
@@ -184,9 +206,22 @@ class ZZFiller(Module):
         leps = list(electrons)+list(muons)
         nlep=len(leps)
 
-        ### Skip events with too few leptons (min 3 if ZL is included, 4 otherwise) 
-        if nlep < 3 or (not self.addZLCR and nlep < 4) : 
-            return False
+        
+        ### Apply initial event filter.
+        if self.filterType == self.filterOnCands : # Filter on candidates will happen later. Here We just apply a minimal pre-filter  (>=3L if ZL is included, 4 otherwise)
+            if nlep < 3 or (not self.addZLCR and nlep < 4) :
+                return False
+        elif self.filterType == self.filter_3L_20_10 : # Select events with 3 good leptons, pt>20/10 
+            nGoodLeps = 0
+            nLeps10 = 0
+            nLeps20 = 0
+            for lep in leps :
+                if lep.ZZFullSel :
+                    nGoodLeps += 1
+                    if lep.pt>10. : nLeps10 +=1
+                    if lep.pt>20. : nLeps20 +=1
+            if nGoodLeps < 3 or nLeps20 < 1 or nLeps10 < 2 :
+                return False
         
         Zs = [] # all Z cands, used to build SR and CRs
         SRZs = [] # Selected Zs, to be written out
@@ -339,8 +374,8 @@ class ZZFiller(Module):
                    (aL.charge != aZ.l2.charge and (aL.p4()+aZ.l2.p4()).M() <= 4) :
                     ZLCand_lIdx = -1
                         
-        ### Skip events with no candidates
-        if len(ZZs) == 0 and len(ZLLs) == 0 and ZLCand_lIdx < 0: return False
+        ### Filter events with no candidates
+        if self.filterType == self.filterOnCands and len(ZZs) == 0 and len(ZLLs) == 0 and ZLCand_lIdx < 0: return False
 
         ### Now fill the variables to be stored as output
         # Fill selected Zs
@@ -579,11 +614,13 @@ class ZZFiller(Module):
         else: return 1
         
 
-    # Build a ZZ object from given Za, Zb pair, if it passes selection cuts; None is returned otherwise.
-    # All relevant candidate variables are computed for the candidate. Options:
-    #  sortZsByMass : set Z1 and Z2 according to closest-Mz criteria (for SR); otherwise, specified order is
-    #                 kept (useful for CRs)
     def makeCand(self, Za, Zb, sortZsByMass=True, fillIDVars=True) :
+        '''Build a ZZ object from given Za, Zb pair, if it passes selection cuts; None is returned otherwise.
+        All relevant candidate variables are computed for the candidate. Options:
+        sortZsByMass : set Z1 and Z2 according to closest-Mz criteria (for SR); otherwise, specified order is
+                       kept (useful for CRs)
+        '''
+        
         # check that these Zs are mutually exclusive (not sharing the same lepton) 
         if Za.l1Idx==Zb.l1Idx or Za.l2Idx==Zb.l2Idx or Za.l2Idx==Zb.l1Idx or Za.l2Idx==Zb.l2Idx: return None
         
