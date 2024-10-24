@@ -14,9 +14,11 @@ import numpy as np
 from array import array
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
-inFilenameMC   = "H4l_MC.root"
-inFilenameData = "H4l_Data.root"
-outFilename = "Plots.root"
+inFilenameMC   = "/eos/user/m/mmanoni/HZZ_samples_2023/H4l_MC.root"
+#"/eos/user/m/mmanoni/HZZ_samples_2023/H4l_MC_postBPix.root"
+inFilenameData = "/eos/user/m/mmanoni/HZZ_samples_2023/H4l_Data.root"
+#"/eos/user/m/mmanoni/HZZ_samples_2023/H4l_Data_postBPix.root"
+outFilename = "Plots_preBPix.root" #"Plots_postBPix.root"
 
 ### 2018 plots
 #Lum = 59.74 # 1/fb
@@ -31,7 +33,26 @@ epsilon=0.1
 addEmptyBins = True
 
 #ZX estaimation parameters - taken from 2018 data - approx. normalization, just for visualization purposes
+def add_legend_and_label(canvas, hs, hdata):
+    # Create the legend
+    legend = ROOT.TLegend(0.65, 0.65, 0.88, 0.88)
+    legend.SetBorderSize(0)
+    legend.SetFillStyle(0)
+    legend.SetTextSize(0.03)
+    
+    # Add entries for the different components
+    legend.AddEntry(hdata, "Data", "lep")
+    legend.AddEntry(hs.GetHists().FindObject("ZX_tot"), "Z+X", "f")
+    legend.AddEntry(hs.GetHists().FindObject("h_ggTo"), "gg#rightarrowZZ", "f")
+    legend.AddEntry(hs.GetHists().FindObject("ZZTo4l"), "qq#rightarrowZZ", "f")
+    legend.AddEntry(hs.GetHists().FindObject("h_signal"), "Signal", "f")
 
+    # Draw the legend on the canvas
+    legend.Draw()
+
+    # Update the canvas to show the labels and legend
+    canvas.Update()
+    
 def getZX(h_model) :
     n_entries = 10000
     bin_down  = 70.
@@ -73,7 +94,7 @@ def getZX(h_model) :
     
 
 ### 2022 plots
-Lum = 35.08424 # 1/fb 2022 C-G  (= 35.181930231/fb of full 355100_362760 Golden json - 0.097685694 of eraB that we don't use
+Lum = 17.79 #9.45  17.79# 1/fb 2022 C-G  (= 35.181930231/fb of full 355100_362760 Golden json - 0.097685694 of eraB that we don't use
 #Lum = 21.1289 # 1/fb 2022 F-G Golden json (prompt v11)
 
 # Set style matching the one used for HZZ plots
@@ -122,12 +143,13 @@ def Stack (f, version = "_4GeV_"):
     WWZ = f.Get(name+"WWZ")
     WZZ = f.Get(name+"WZZ")
     ZZZ = f.Get(name+"ZZZ")
-    VBFToZZTo4l = f.Get(name+"VBFToZZTo4l")
+    #VBFToZZTo4l = f.Get(name+"VBFToZZTo4l")
     TTZToLLNuNu = f.Get(name+"TTZToLLNuNu")
-    TTZJets = f.Get(name+"TTZJets")
+    #TTZJets = f.Get(name+"TTZJets")
 
    
-    EWSamples = [WZZ, ZZZ, VBFToZZTo4l, TTZToLLNuNu, TTZJets]
+    EWSamples = [WZZ]
+    #, ZZZ, TTZToLLNuNu]#VBFToZZTo4l,,TTZJets
     EW = WWZ.Clone("h_EW")
     for i in EWSamples:
         EW.Add(i,1.)
@@ -166,7 +188,8 @@ def Stack (f, version = "_4GeV_"):
     ZH125 = f.Get(name+"ZH125")
     ttH125 = f.Get(name+"ttH125")
     
-    signalSamples = [ggH, WplusH125, WminusH125, ZH125, ttH125]
+    signalSamples = [ggH]
+    #, WplusH125, WminusH125, ZH125, ttH125]
     signal = VBF125.Clone("h_signal")
     
     for i in signalSamples:
@@ -193,9 +216,9 @@ def Stack (f, version = "_4GeV_"):
     hs.Add(hzx,"HISTO")
     hs.Add(EW,"HISTO")
     hs.Add(ggToZZ,"HISTO")
-    hs.Add(ZZTo4l,"HISTO")
+    hs.Add(ZZTo4l,"HISTO")#qqZZ
     hs.Add(signal,"HISTO")
-    
+
     return hs
 
 ### Get a TGraph for data, blinded if required
@@ -282,6 +305,7 @@ ROOT.gPad.RedrawAxis()
 ### Zoomed m4l
 HStack_z = Stack(fMC, "_2GeV_")
 HData_z = dataGraph(fData, "_2GeV_", blind=blindPlots)
+print("Number of points in HData_z:", HData_z.GetN())
 Canvas_z = ROOT.TCanvas("M4l_z","M4l_z",canvasSizeX,canvasSizeY)
 Canvas_z.SetTicks()
 HData_z.ComputeRange(xmin,ymin,xmax,ymax)
@@ -297,8 +321,9 @@ if blindPlots:
      bblind_z.Draw()
 HData_z.Draw("samePE1")
 ROOT.gPad.RedrawAxis()
+add_legend_and_label(Canvas_z, HStack_z, HData_z)
 
-### Zoomed high mass
+'''### Zoomed high mass
 Canvas_hm = ROOT.TCanvas("M4l_hm","M4l_hm",canvasSizeX,canvasSizeY)
 Canvas_hm.SetTicks()
 Canvas_hm.SetLogy()
@@ -314,6 +339,6 @@ Canvas10.SetTicks()
 Canvas10.SetLogy()
 HStack10.Draw("histo")
 HStack10.GetXaxis().SetRangeUser(170.,1000.)
-HData10.Draw("samePE0E1")
+HData10.Draw("samePE0E1")'''
 
 printCanvases()
