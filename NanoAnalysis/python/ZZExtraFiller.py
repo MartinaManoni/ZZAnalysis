@@ -83,7 +83,7 @@ class ZZExtraFiller(Module):
 
     ### Compute lepton efficiency scale factor
     def getDataMCWeight(self, leps) :
-        if self.year >= 2023 : #FIXME: not yet implemented
+        if self.year > 2023 : #FIXME: not yet implemented
             return 1.
         dataMCWeight = 1.
         for lep in leps:
