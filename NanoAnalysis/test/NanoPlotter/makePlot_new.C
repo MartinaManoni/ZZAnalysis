@@ -1,6 +1,8 @@
 #include "CMS_lumi.C"
 #include <tuple>
 #include <vector>
+#include <ROOT/RVec.hxx>
+#include <ROOT/RDataFrame.hxx>
 
 void DrawRatioPlot(string name, TCanvas *c, TH1D *data, TH1D *MC, TH1D*MCUp, TH1D*MCDn, double _lumi){
         std::cout << "[INFO] Starting DrawRatioPlot function for plot: " << name << std::endl;
@@ -15,7 +17,7 @@ void DrawRatioPlot(string name, TCanvas *c, TH1D *data, TH1D *MC, TH1D*MCUp, TH1
         gPad->SetTopMargin(0.18);
         gPad->SetLeftMargin(0.10);
 
-        MC->Scale( data->Integral() / MC->Integral() );
+        //MC->Scale( data->Integral() / MC->Integral() );
 
         double max = 0.;
         for (int bin = 0; bin < MC->GetSize() - 2; bin++){
@@ -127,6 +129,19 @@ void DrawRatioPlot(string name, TCanvas *c, TH1D *data, TH1D *MC, TH1D*MCUp, TH1
         c->Clear();
 }
 
+// Function to compute the leading jet eta from sorted jet lists
+double computeLeadJet_new(const ROOT::RVec<float>& JetEta, const ROOT::RVec<float>& JetPt) {
+    double highest = 0;
+    int i_up = -1;
+    for (int i = 0; i < JetEta.size(); i++) {
+        if (JetPt[i] > highest && JetPt[i] > 30) { // Consider only jets with pt > 30
+            highest = JetPt[i];
+            i_up = i;
+        }
+    }
+    return i_up >= 0 ? JetEta[i_up] : 0; // Return the eta of the leading jet, or 0 if no valid jet
+}
+
 double computeLeadJet(ROOT::RVec<float> &_JetEta, ROOT::RVec<float> &_JetPt_JER){
   double highest = 0;
   int i_up = 0;
@@ -139,68 +154,81 @@ double computeLeadJet(ROOT::RVec<float> &_JetEta, ROOT::RVec<float> &_JetPt_JER)
   return _JetEta.at(i_up);
 }
 
+
 // Function to get genEventSumw using RDataFrame
 double get_genEventSumw(const std::string& fpath) {
     ROOT::RDataFrame rdf_runs("Runs", fpath); // Define RDataFrame for the "Runs" tree
     auto gen_sumWeights = *(rdf_runs.Sum("genEventSumw")); // Sum over genEventSumw column
-    std::cout << "[INFO] genEventSumw for file " << fpath << ": " << gen_sumWeights << std::endl;
+    //std::cout << "[INFO] genEventSumw for file " << fpath << ": " << gen_sumWeights << std::endl;
     return gen_sumWeights;
 }
 
-bool AllJetsHaveJetId6(const ROOT::RVec<unsigned char>& Jet_JetId) {
-    return std::all_of(Jet_JetId.begin(), Jet_JetId.end(), [](unsigned char id) { return id == 6; });
+
+tuple<ROOT::RDF::RResultPtr<TH1D>, ROOT::RDF::RResultPtr<TH1D>, ROOT::RDF::RResultPtr<TH1D>> Histo_MC(string fpath, double _lumi) {
+
+    double gen_sumWeights = get_genEventSumw(fpath); // Get the sum of genEventSumw from Runs tree
+    std::cout << "[INFO] genEventSumw for file " << fpath << ": " << gen_sumWeights << std::endl;
+
+    ROOT::RDataFrame rdf("Events", fpath);
+
+    // Step 1: Filter jets by Jet_jetId == 6 and sort by pt in descending order
+    auto sorted_rdf = rdf
+        .Define("FilteredJet_eta", "Jet_eta[Jet_jetId == 6 && Jet_pt > 30]")
+        .Define("FilteredJet_pt", "Jet_pt[Jet_jetId == 6 && Jet_pt > 30]")
+        .Define("FilteredJet_smearUp_pt", "Jet_smearUp_pt[Jet_jetId == 6 && Jet_pt > 30]")
+        .Define("FilteredJet_smearDn_pt", "Jet_smearDn_pt[Jet_jetId == 6 && Jet_pt > 30]")
+        .Define("SortedJet_eta", "FilteredJet_eta[Reverse(Argsort(FilteredJet_pt))]")
+        .Define("SortedJet_pt", "FilteredJet_pt[Reverse(Argsort(FilteredJet_pt))]")
+        .Define("SortedJet_smearUp_pt", "FilteredJet_smearUp_pt[Reverse(Argsort(FilteredJet_pt))]")
+        .Define("SortedJet_smearDn_pt", "FilteredJet_smearDn_pt[Reverse(Argsort(FilteredJet_pt))]");
+
+    // Step 2: Apply the event-level filter
+    auto skim_rdf = sorted_rdf.Filter("ZLCand_lepIdx >= 0 && SortedJet_eta.size() > 0 && Jet_vetoedEvent == 0") //&& Jet_vetoedEvent == 0"
+        .Define("weight", Form("1000 * overallEventWeight * %f / %f", _lumi, gen_sumWeights))
+        .Define("leadEta", "SortedJet_eta.at(0)")
+        .Define("leadEtaUp", computeLeadJet, {"SortedJet_eta", "SortedJet_smearUp_pt"})
+        .Define("leadEtaDown", computeLeadJet, {"SortedJet_eta", "SortedJet_smearDn_pt"});
+
+    // Create histograms
+    auto hist_nominal = skim_rdf.Histo1D({"leadEta_MC", "leadEta_MC", 47, -4.7, 4.7}, "leadEta", "weight");
+    auto hist_up = skim_rdf.Histo1D({"leadEtaUp_MC", "leadEtaUp_MC", 47, -4.7, 4.7}, "leadEtaUp", "weight");
+    auto hist_dn = skim_rdf.Histo1D({"leadEtaDown_MC", "leadEtaDown_MC", 47, -4.7, 4.7}, "leadEtaDown", "weight");
+
+
+    std::cout << "[INFO] Histograms created for " << fpath << std::endl;
+
+    return std::make_tuple(hist_nominal, hist_up, hist_dn);
 }
 
-tuple<ROOT::RDF::RResultPtr<TH1D>,ROOT::RDF::RResultPtr<TH1D>,ROOT::RDF::RResultPtr<TH1D>> Histo_MC(string fpath, double _lumi){
-
-  double gen_sumWeights = get_genEventSumw(fpath); // Get the sum of genEventSumw from Runs tree
-  std::cout << "[INFO] genEventSumw for file " << fpath << ": " << gen_sumWeights << std::endl;
-
-  ROOT::RDataFrame rdf ("Events", fpath);
-  // Step 1: Filter by Jet ID == 1
-  //auto filtered_rdf = rdf.Filter("Jet_jetId == 6");
-  //TFile * f             = new TFile((TString)fpath,"READ");
-  auto skim_rdf         = rdf.Filter("ZLCand_lepIdx >=0 && Jet_eta.size() >0 && Jet_vetoedEvent == 0")
-                             //.Filter(AllJetsHaveJetId6, {"Jet_jetId"})
-                             //.Define("FilteredJetPt", "Jet_pt[Jet_jetId == 6]")
-                             .Define("weight", Form("1000 * overallEventWeight * %f / %f", _lumi, gen_sumWeights)) // do i have to add the xsec ? 
-                             .Define("leadEta", "Jet_eta.at(0)")
-                             .Define("leadEtaUp",   computeLeadJet, {"Jet_eta", "Jet_smearUp_pt"})
-                             .Define("leadEtaDown", computeLeadJet, {"Jet_eta", "Jet_smearDn_pt"});
-
-  auto hist_nominal = skim_rdf.Histo1D({"leadEta_MC",     "leadEta_MC",     47, -4.7, 4.7}, "leadEta",     "weight");
-  auto hist_up      = skim_rdf.Histo1D({"leadEtaUp_MC",   "leadEtaUp_MC",   47, -4.7, 4.7}, "leadEtaUp",   "weight");
-  auto hist_dn      = skim_rdf.Histo1D({"leadEtaDown_MC", "leadEtaDown_MC", 47, -4.7, 4.7}, "leadEtaDown", "weight");
-
-  std::cout << "[INFO] Histograms created for " << fpath << std::endl;
-
-  return std::make_tuple(hist_nominal, hist_up, hist_dn);
-
-}
 
 
 
 
-void makePlot(){
+void makePlot_new(){
 
   //pre EE 2022 SAMPLES WITH JETVETO
-  //string fDY   = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto/PROD_samplesNano_2022_MC/DYJetsToLL_forPOG/ZZ4lAnalysis.root";
-  //string fTT   = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto/PROD_samplesNano_2022_MC_901ffb16/TTto2L2Nu/ZZ4lAnalysis.root";
-  //string fDY   = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto/PROD_samplesNano_2022_MC_901ffb16/DYJetsToLL_forPOG/ZZ4lAnalysis.root";
-  //string fdata = "/eos/user/m/mmanoni/HZZ_samples_2022/Data_jetVeto/PROD_samplesNano_2022_Data_901ffb16/Data_eraCD_preEE.root";
+  //string fTT   = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto_new/PROD_samplesNano_2022_MC/TTto2L2Nu/ZZ4lAnalysis.root";
+  //string fDY   = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto_new/PROD_samplesNano_2022_MC/DYJetsToLL_forPOG/ZZ4lAnalysis.root";
+  //string fdata = "/eos/user/m/mmanoni/HZZ_samples_2022/Data_jetVeto_new/PROD_samplesNano_2022_Data_901ffb16/Data_eraCD_preEE.root";
   //double lumi  = 7.98; //preEE 2022
 
-  //post EE 2022 //SAMPLES WITH JETVETO
-  string fDY   = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto_new/PROD_samplesNano_2022EE_MC_901ffb16/DYJetsToLL_forPOG/ZZ4lAnalysis.root";
-  string fTT   = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto_new/PROD_samplesNano_20PROD_samplesNano_2022EE_MC_901ffb1622EE_MC/TTto2L2Nu/ZZ4lAnalysis.root";
-  string fdata = "/eos/user/m/mmanoni/HZZ_samples_2022/Data_jetVeto_new/PROD_samplesNano_2022_Data_901ffb16/Data_eraEFG_postEE.root";
-  double lumi  = 26.67; //postEE 2022
+ //post EE 2022 //SAMPLES WITH JETVETO
+  //string fDY   = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto_new/PROD_samplesNano_2022EE_MC_901ffb16/DYJetsToLL_forPOG/ZZ4lAnalysis.root";
+  //string fTT   = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto_new/PROD_samplesNano_2022EE_MC_901ffb16/TTto2L2Nu/ZZ4lAnalysis.root";
+  //string fdata = "/eos/user/m/mmanoni/HZZ_samples_2022/Data_jetVeto_new/PROD_samplesNano_2022_Data_901ffb16/Data_eraEFG_postEE.root";
+  //double lumi  = 26.67; //postEE 2022
 
-  //2023
-  //string fDY   = "/eos/user/m/mmanoni/HZZ_samples_2023/MC/PROD_samplesNano_2023preBPix_MC/DYJetsToLL/ZZ4lAnalysis.root";
-  //string fTT   = "/eos/user/m/mmanoni/HZZ_samples_2023/MC/PROD_samplesNano_2023preBPix_MC/TTto2L2Nu/ZZ4lAnalysis.root";
-  //string fdata = "/eos/user/m/mmanoni/HZZ_samples_2023/Data/PROD_samplesNano_2023_Data/Data_eraC_preBPix.root";
-  //double lumi  = 17.8; //preBPix 2023
+  //2023 //PRE BPIX
+  //string fDY   = "/eos/user/m/mmanoni/HZZ_samples_2023/MC_jetVeto_new/PROD_samplesNano_2023preBPix_MC/DYJetsToLL/ZZ4lAnalysis.root";
+  //string fTT   = "/eos/user/m/mmanoni/HZZ_samples_2023/MC_jetVeto_new/PROD_samplesNano_2023preBPix_MC/TTto2L2Nu/ZZ4lAnalysis.root";
+  //string fdata = "/eos/user/m/mmanoni/HZZ_samples_2023/Data_jetVeto_new/PROD_samplesNano_2023_Data/Data_eraC_preBPix.root";
+  //double lumi  = 17.8;
+
+  //2023 //POST BPIX
+  string fDY   = "/eos/user/m/mmanoni/HZZ_samples_2023/MC_jetVeto_new/PROD_samplesNano_2023postBPix_MC/DYJetsToLL/ZZ4lAnalysis.root";
+  string fTT   = "/eos/user/m/mmanoni/HZZ_samples_2023/MC_jetVeto_new/PROD_samplesNano_2023postBPix_MC/TTto2L2Nu/ZZ4lAnalysis.root";
+  string fdata = "/eos/user/m/mmanoni/HZZ_samples_2023/Data_jetVeto_new/PROD_samplesNano_2023_Data/Data_eraD_postBPix.root";
+  double lumi  = 9.5;
   
   ROOT::RDF::RResultPtr<TH1D> hist_DY;
   ROOT::RDF::RResultPtr<TH1D> hist_DY_up;
@@ -214,9 +242,21 @@ void makePlot(){
 
 
   ROOT::RDataFrame rdf_data("Events", fdata);
-  auto hist_data  = rdf_data.Filter("ZLCand_lepIdx >=0 && Jet_eta.size() >0 && Jet_vetoedEvent == 0")
-                            .Define("leadEta", "Jet_eta.at(0)")
-                            .Histo1D({"leadEta_data", "leadEta_data", 47, -4.7, 4.7}, "leadEta");
+  // Step 1: Filter jets by Jet_jetId == 6 and sort by pt in descending order for the data
+  auto sorted_data = rdf_data
+      .Define("FilteredJet_eta", "Jet_eta[Jet_jetId == 6 && Jet_pt > 30]")
+      .Define("FilteredJet_pt", "Jet_pt[Jet_jetId == 6 && Jet_pt > 30]")
+      .Define("SortedJet_eta", "FilteredJet_eta[Reverse(Argsort(FilteredJet_pt))]");
+
+  // Step 2: Apply event-level filter and define leadEta
+  auto skim_data = sorted_data.Filter("ZLCand_lepIdx >= 0 && SortedJet_eta.size() > 0 && Jet_vetoedEvent == 0") //&& Jet_vetoedEvent == 0
+      .Define("leadEta", "SortedJet_eta.at(0)");
+  // Create histogram for data
+  auto hist_data = skim_data.Histo1D({"leadEta_data", "leadEta_data", 47, -4.7, 4.7}, "leadEta");
+
+  //auto hist_data  = rdf_data.Filter("ZLCand_lepIdx >=0 && Jet_eta.size() >0 && Jet_vetoedEvent == 0")
+                           // .Define("leadEta", "Jet_eta.at(0)")
+                           // .Histo1D({"leadEta_data", "leadEta_data", 47, -4.7, 4.7}, "leadEta");
 
   hist_DY    -> Add(hist_ttbar.GetPtr());
   hist_DY_up -> Add(hist_ttbar_up.GetPtr());
@@ -232,7 +272,7 @@ void makePlot(){
   outfile    -> Close();
 
   TCanvas * canvas = new TCanvas();
-  DrawRatioPlot("test", canvas,
+  DrawRatioPlot("test_postBPix_JetVeto_new", canvas,
                 hist_data.GetPtr(),
                 hist_DY.GetPtr(), hist_DY_up.GetPtr(), hist_DY_dn.GetPtr(),
                 lumi);

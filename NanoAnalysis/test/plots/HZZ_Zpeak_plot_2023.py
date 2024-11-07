@@ -150,8 +150,8 @@ CP_BINNING = np.linspace(60, 120, 100)
 # The scaling of DY and TT xsecs are there because we spotted some wrong values in the csv used for the prod
 # Doesn't really matter if then we normalize MC to Data. OTOH TT is off by one order of magnitude, so better to correct
 
-n_dy, bins = np.histogram(ak.flatten(m_dy), weights=w_dy * 1000 * lumi / dy_cnt * (6225.4 / 5558.0), bins=CP_BINNING)
-n_tt, bins = np.histogram(ak.flatten(m_tt), weights=w_tt * 1000 * lumi / tt_cnt * (87.3 / 762.1), bins=CP_BINNING)
+n_dy, bins = np.histogram(ak.flatten(m_dy), weights=w_dy * 1000 * lumi / dy_cnt , bins=CP_BINNING) #* (6225.4 / 5558.0)
+n_tt, bins = np.histogram(ak.flatten(m_tt), weights=w_tt * 1000 * lumi / tt_cnt , bins=CP_BINNING) #* (87.3 / 762.1)
 n_wz, bins = np.histogram(ak.flatten(m_wz), weights=w_wz * 1000 * lumi / wz_cnt, bins=CP_BINNING)
 
 n_dt, bins_dt = np.histogram(ak.flatten(dt_z1mass), bins=CP_BINNING)

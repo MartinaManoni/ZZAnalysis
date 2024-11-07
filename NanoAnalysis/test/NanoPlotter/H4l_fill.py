@@ -10,18 +10,8 @@ from PhysicsTools.NanoAODTools.postprocessing.framework.datamodel import Collect
 from ZZAnalysis.NanoAnalysis.tools import getLeptons, get_genEventSumw
 
 
-pathMC = "/eos/user/m/mmanoni/HZZ_samples_2023/PROVA/MC/PROD_samplesNano_2023preBPix_MC_prova/"
-#"/eos/user/m/mmanoni/HZZ_samples_2023/PROVA/MC/PROD_samplesNano_2023postBPix_MC_prova/"
-#"/eos/user/n/namapane/H4lnano/220420/" # FIXME: Use 2018 MC for the time being
-pathDATA = "/eos/user/m/mmanoni/HZZ_samples_2023/Data/PROD_samplesNano_2023_Data_eraD_postBPix/"
-#"/eos/user/m/mmanoni/HZZ_samples_2023/Data/PROD_samplesNano_2023_Data_eraC_preBPix/"
-#"/eos/cms/store/group/phys_higgs/cmshzz4l/cjlst/RunIII/231209_nano/Data2022"
-
 ZmassValue = 91.1876
-
 maxEntriesPerSample = 1e12 # Use only up to this number of events in each MC sample, for quick tests.
-
-
 
 ROOT.TH1.SetDefaultSumw2()
 
@@ -93,8 +83,8 @@ def fillHistos(samplename, filename) :
     
     return h_ZZMass2,h_ZZMass4,h_ZZMass10
 
-def runMC():
-    outFile = "/eos/user/m/mmanoni/HZZ_samples_2023/H4l_MC_postBPix.root" 
+def runMC(pathMC, outFile):
+    #outFile = "/eos/user/m/mmanoni/HZZ_samples_2022/H4l_MC_preEE.root"  #postEE
 
     samples = [
         #TTWW,TTZZ, WZto3LNu
@@ -133,12 +123,12 @@ def runMC():
 
     of.Close()
 
-def runData():
-    outFile = "/eos/user/m/mmanoni/HZZ_samples_2023/H4l_Data_postBPix.root" 
+def runData(pathDATA, outFile, fileDATA):
+    #outFile = "/eos/user/m/mmanoni/HZZ_samples_2023/H4l_Data_preEE.root" 
 
     of = ROOT.TFile.Open(outFile,"recreate") 
                 
-    hs_data = fillHistos("Data", pathDATA+ "/Data_eraD.root")#/Data_eraC.root
+    hs_data = fillHistos("Data", pathDATA + fileDATA) 
     for h in hs_data:
         h.SetBinErrorOption(ROOT.TH1.kPoisson)
         of.WriteObject(h,h.GetName())
@@ -146,5 +136,36 @@ def runData():
     of.Close()
 
 if __name__ == "__main__" :
-    runMC()
-    runData()
+
+    year = "2023"  #2022, 2022EE, 2023, 2023BPix
+
+    if year == "2022":
+        pathMC = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto_new/PROD_samplesNano_2022_MC/"
+        pathDATA = "/eos/user/m/mmanoni/HZZ_samples_2022/Data_jetVeto_new/PROD_samplesNano_2022_Data/"
+        outFileMC = "/eos/user/m/mmanoni/HZZ_samples_2022/H4l_MC_preEE.root"
+        outFileDATA = f"/eos/user/m/mmanoni/HZZ_samples_2022/H4l_Data_preEE.root"
+        fileDATA = "Data_eraCD_preEE.root"
+
+    elif year == "2022EE": #postEE
+        pathMC = "/eos/user/m/mmanoni/HZZ_samples_2022/MC_jetVeto_new/PROD_samplesNano_2022EE_MC/"
+        pathDATA = "/eos/user/m/mmanoni/HZZ_samples_2022/Data_jetVeto_new/PROD_samplesNano_2022EE_Data/"
+        outFileMC = "/eos/user/m/mmanoni/HZZ_samples_2022/H4l_MC_postEE.root"
+        outFileDATA = f"/eos/user/m/mmanoni/HZZ_samples_2022/H4l_Data_postEE.root"
+        fileDATA = "Data_eraEFG_postEE.root"
+
+    elif year == "2023": #preBPix
+        pathMC = "/eos/user/m/mmanoni/HZZ_samples_2023/MC_jetVeto_new/PROD_samplesNano_2023preBPix_MC/"
+        pathDATA = "/eos/user/m/mmanoni/HZZ_samples_2023/Data_jetVeto_new/PROD_samplesNano_2023preBPix_Data/"
+        outFileMC = "/eos/user/m/mmanoni/HZZ_samples_2023/H4l_MC_preBPix.root"
+        outFileDATA = f"/eos/user/m/mmanoni/HZZ_samples_2023/H4l_Data_preBPix.root"
+        fileDATA = "Data_eraC_preBPix.root"
+
+    elif year == "2023BPix": #postBPix
+        pathMC = "/eos/user/m/mmanoni/HZZ_samples_2023/MC_jetVeto_new/PROD_samplesNano_2023postBPix_MC/"
+        pathDATA = "/eos/user/m/mmanoni/HZZ_samples_2023/Data_jetVeto_new/PROD_samplesNano_2023postBPix_Data/"
+        outFileMC = "/eos/user/m/mmanoni/HZZ_samples_2023/H4l_MC_postBPix.root"
+        outFileDATA = f"/eos/user/m/mmanoni/HZZ_samples_2023/H4l_Data_postBPix.root"
+        fileDATA = "Data_eraD_postBPix.root"
+
+    runMC(pathMC, outFileMC)
+    runData(pathDATA, outFileDATA, fileDATA)

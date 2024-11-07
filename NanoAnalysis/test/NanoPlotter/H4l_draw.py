@@ -14,11 +14,10 @@ import numpy as np
 from array import array
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
-inFilenameMC   = "/eos/user/m/mmanoni/HZZ_samples_2023/H4l_MC.root"
-#"/eos/user/m/mmanoni/HZZ_samples_2023/H4l_MC_postBPix.root"
-inFilenameData = "/eos/user/m/mmanoni/HZZ_samples_2023/H4l_Data.root"
-#"/eos/user/m/mmanoni/HZZ_samples_2023/H4l_Data_postBPix.root"
-outFilename = "Plots_preBPix.root" #"Plots_postBPix.root"
+inFilenameMC   = "/eos/user/m/mmanoni/HZZ_samples_2022/H4l_MC_preEE.root"
+inFilenameData = "/eos/user/m/mmanoni/HZZ_samples_2022/H4l_Data_preEE.root"
+outFilename = "Plots_2022_preEE.root"
+
 
 ### 2018 plots
 #Lum = 59.74 # 1/fb
@@ -33,7 +32,7 @@ epsilon=0.1
 addEmptyBins = True
 
 #ZX estaimation parameters - taken from 2018 data - approx. normalization, just for visualization purposes
-def add_legend_and_label(canvas, hs, hdata):
+'''def add_legend_and_label(canvas, hs, hdata):
     # Create the legend
     legend = ROOT.TLegend(0.65, 0.65, 0.88, 0.88)
     legend.SetBorderSize(0)
@@ -51,6 +50,32 @@ def add_legend_and_label(canvas, hs, hdata):
     legend.Draw()
 
     # Update the canvas to show the labels and legend
+    canvas.Update()'''
+
+# Global reference to keep the legend alive
+global_legend = None  # Define globally to persist
+
+def add_legend_and_label(canvas, hs, hdata):
+    global global_legend  # Use global reference
+    
+    # Create the legend and customize it
+    global_legend = ROOT.TLegend(0.75, 0.65, 0.88, 0.88)
+    global_legend.SetBorderSize(0)
+    global_legend.SetFillStyle(0)
+    global_legend.SetTextSize(0.03)
+    
+    # Add entries for the different components
+    global_legend.AddEntry(hdata, "Data", "lep")
+    global_legend.AddEntry(hs.GetHists().FindObject("ZX_tot"), "Z+X", "f")
+    global_legend.AddEntry(hs.GetHists().FindObject("h_ggTo"), "gg#rightarrowZZ", "f")
+    global_legend.AddEntry(hs.GetHists().FindObject("ZZTo4l"), "qq#rightarrowZZ", "f")
+    global_legend.AddEntry(hs.GetHists().FindObject("h_signal"), "Signal", "f")
+
+    # Draw and keep a reference in the canvas
+    global_legend.Draw()
+    canvas.global_legend = global_legend  # Attach to canvas to persist
+
+    # Update the canvas to ensure the legend is displayed
     canvas.Update()
     
 def getZX(h_model) :
@@ -94,8 +119,11 @@ def getZX(h_model) :
     
 
 ### 2022 plots
-Lum = 17.79 #9.45  17.79# 1/fb 2022 C-G  (= 35.181930231/fb of full 355100_362760 Golden json - 0.097685694 of eraB that we don't use
-#Lum = 21.1289 # 1/fb 2022 F-G Golden json (prompt v11)
+Lum = 7.98 #preEE
+#26.67; #postEE 2022
+
+### 2023 plots
+#17.79 #pre BPix
 
 # Set style matching the one used for HZZ plots
 ROOT.TH1.SetDefaultSumw2()
@@ -148,8 +176,7 @@ def Stack (f, version = "_4GeV_"):
     #TTZJets = f.Get(name+"TTZJets")
 
    
-    EWSamples = [WZZ]
-    #, ZZZ, TTZToLLNuNu]#VBFToZZTo4l,,TTZJets
+    EWSamples = [WZZ, ZZZ, TTZToLLNuNu]#VBFToZZTo4l,,TTZJets
     EW = WWZ.Clone("h_EW")
     for i in EWSamples:
         EW.Add(i,1.)
@@ -188,8 +215,7 @@ def Stack (f, version = "_4GeV_"):
     ZH125 = f.Get(name+"ZH125")
     ttH125 = f.Get(name+"ttH125")
     
-    signalSamples = [ggH]
-    #, WplusH125, WminusH125, ZH125, ttH125]
+    signalSamples = [ggH, WplusH125, WminusH125, ZH125, ttH125]
     signal = VBF125.Clone("h_signal")
     
     for i in signalSamples:
@@ -321,7 +347,10 @@ if blindPlots:
      bblind_z.Draw()
 HData_z.Draw("samePE1")
 ROOT.gPad.RedrawAxis()
+# Add CMS label to the plot
+#hep.cms.label(rlabel="")  # Customize position and status as needed
 add_legend_and_label(Canvas_z, HStack_z, HData_z)
+Canvas_z.Update()
 
 '''### Zoomed high mass
 Canvas_hm = ROOT.TCanvas("M4l_hm","M4l_hm",canvasSizeX,canvasSizeY)
