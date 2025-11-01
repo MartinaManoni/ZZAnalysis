@@ -35,6 +35,9 @@ def getEleBDTCut(era, dataTag, nanoVersion, useUncorrPt=False) :
     # The WP was derived before scale corrections, so the uncorrected pt should be used when available.
     def eleBDTCut_RunIII_ULTraining_def(ele) :
         return(eleBDTCut_RunIII_ULTraining(ele.pt, abs(ele.eta + ele.deltaEtaSC), ele.mvaHZZIso))
+    
+    def eleBDTCut_RunIII_2022Training_def(ele) :
+        return(eleBDTCut_RunIII_2022Training(ele.pt, abs(ele.eta + ele.deltaEtaSC), ele.mvaHZZIso))
         
     def eleBDTCut_RunIII_ULTraining_uncorr(ele) :
         return(eleBDTCut_RunIII_ULTraining(ele.uncorrected_pt, abs(ele.eta + ele.deltaEtaSC), ele.mvaHZZIso))
@@ -46,7 +49,36 @@ def getEleBDTCut(era, dataTag, nanoVersion, useUncorrPt=False) :
                or (pt>10. and  ((fSCeta<0.8                   and BDT > 0.1968600840) or \
                                 (fSCeta>=0.8 and fSCeta<1.479 and BDT > 0.0759172100) or \
                                 (fSCeta>=1.479                and BDT > -0.5169136775)))
+    
+    def eleBDTCut_RunIII_2022Training(pt, fSCeta, BDT):
+        #print("eleBDTCut_RunIII_2022Training_def")
+        print("WP: ", pt<=10. and     ((fSCeta<0.8  and BDT > 0.926625397) or \
+                                 (fSCeta>=0.8 and fSCeta<1.479 and BDT > 0.913770249) or \
+                                 (fSCeta>=1.479                and BDT > 0.968215783))) \
+               or (pt>10. and  ((fSCeta<0.8                   and BDT > 0.352698958) or \
+                                (fSCeta>=0.8 and fSCeta<1.479 and BDT > 0.260123422) or \
+                                (fSCeta>=1.479                and BDT > -0.4963744803)))
 
+        return (pt<=10. and     ((fSCeta<0.8                   and BDT > 0.926625397) or \
+                                 (fSCeta>=0.8 and fSCeta<1.479 and BDT > 0.913770249) or \
+                                 (fSCeta>=1.479                and BDT > 0.968215783))) \
+               or (pt>10. and  ((fSCeta<0.8                   and BDT > 0.352698958) or \
+                                (fSCeta>=0.8 and fSCeta<1.479 and BDT > 0.260123422) or \
+                                (fSCeta>=1.479                and BDT > -0.4963744803)))
+
+    def eleBDTCut_RunIII_2022Training_WP(ele):
+        print("WP: ", ele.mvaIso_WPHZZ)
+        return ele.mvaIso_WPHZZ
+
+    def eleBDTCut_RunIII_EGTraining_WP80(ele):
+        #print("WP: ", ele.mvaIso_WP80)
+        return ele.mvaIso_WP80
+
+    def eleBDTCut_RunIII_EGTraining_WP90(ele):
+        #print("WP: ", ele.mvaIso_WP90)
+        return ele.mvaIso_WP90
+
+    print("------------------------")
     if era == 2017 or era == 2018 :
         if "UL" in dataTag :
             if nanoVersion <10 :
@@ -56,11 +88,16 @@ def getEleBDTCut(era, dataTag, nanoVersion, useUncorrPt=False) :
                 return eleBDTCut_RunIIpreUL_v9
 
     elif era >=2022 :
-        if useUncorrPt:
-            return eleBDTCut_RunIII_ULTraining_uncorr
-        else :
-            return eleBDTCut_RunIII_ULTraining_def
-
+        if nanoVersion <14:
+            print("NanoVersion <14")
+            if useUncorrPt:
+                return eleBDTCut_RunIII_ULTraining_uncorr
+            else :
+                return eleBDTCut_RunIII_ULTraining_def
+        else:
+            print("NanoVersion >=14")
+            return eleBDTCut_RunIII_2022Training_WP
+    
     # Fallback: combination not supported
     raise ValueError('getEleBDTCut: era '+ str(era)+', dataTag ' + dataTag + ', nanoVersion ' + str(nanoVersion) + ' not supported')
 

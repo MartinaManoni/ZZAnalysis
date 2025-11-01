@@ -15,7 +15,7 @@ if not validateCheckout() :
 #SampleToRun = "MCsync_2018Rereco" # for mini vs nano sync
 #SampleToRun = "MCsync_2017UL" # for mini vs nano sync
 #SampleToRun = "Data2022"
-SampleToRun = "MC2022"
+SampleToRun = "MC2023"
 #SampleToRun = "MELA_Test"
 #SampleToRun = "ggh125_2018UL"
 #SampleToRun = "forNanoDoc" # To prepare variable lists with inspectNanoFile.py
@@ -49,7 +49,7 @@ json = None #replace this if needed
 
 ################################################################################
 if SampleToRun == "Data2022" :
-    # 2022 data sample from /MuonEG/Run2022D-PromptNanoAODv10_v1-v1/NANOAOD
+    # 2022 data sample from /MuonEG/Run2022D-22Sep2023-v1/NANOAOD
     setConf("IsMC", False)
     setConf("LEPTON_SETUP", 2022)
     setConf("PD", "any")
@@ -57,7 +57,36 @@ if SampleToRun == "Data2022" :
     setConf("TRIGPASSTHROUGH", True)
     setConf("store","root://cms-xrd-global.cern.ch/")
     setConf("fileNames",[
-        "/store/data/Run2022D/MuonEG/NANOAOD/PromptNanoAODv10_v2-v1/50000/68f42f42-3274-46ec-b23d-bfadc13012c2.root",
+        "/store/data/Run2022D/MuonEG/NANOAOD/22Sep2023-v1/40000/27453cd2-36d5-4b34-9cf6-1303480b5dcf.root",
+        ])
+
+elif SampleToRun == "Data2023" :
+    # 2022 data sample from /MuonEG/Run2023D-22Sep2023_v1-v1/NANOAOD
+    setConf("IsMC", False)
+    setConf("LEPTON_SETUP", 2023)
+    setConf("PD", "any")
+    setConf("SAMPLENAME", "test")
+    setConf("TRIGPASSTHROUGH", True)
+    setConf("store","root://cms-xrd-global.cern.ch/")
+    setConf("fileNames",[
+        "/store/data/Run2023D/MuonEG/NANOAOD/22Sep2023_v1-v1/40000/180fca36-4680-4295-8364-bcc292910808.root",
+        ])
+
+elif SampleToRun == "Data2024" :
+    # 2024 data sample from /EGamma1/Run2024I-MINIv6NANOv15_v2-v1/NANOAOD
+    setConf("IsMC", False)
+    setConf("LEPTON_SETUP", 2023)
+    setConf("PD", "any")
+    setConf("DATA_TAG", "post_BPix")
+    setConf("NANOVERSION", 15)
+    setConf("APPLYELECORR", True)
+    setConf("APPLYMUCORR", True)
+    setConf("APPLYJETCORR", False)
+    setConf("SAMPLENAME", "test")
+    setConf("TRIGPASSTHROUGH", True)
+    setConf("store","root://cms-xrd-global.cern.ch/")
+    setConf("fileNames",[
+        "/store/data/Run2024I/EGamma1/NANOAOD/MINIv6NANOv15_v2-v1/2540000/01acd988-764d-4615-88f3-f385408d25f1.root",
         ])
 
 
@@ -111,10 +140,27 @@ elif SampleToRun == "MC2022" :
     setConf("store","root://cms-xrd-global.cern.ch/")
     setConf("APPLY_QCD_GGF_UNCERT", True) # for ggH
     setConf("fileNames",[
-        "/store/mc/Run3Summer22EENanoAODv12/GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/2540000/25c8f5ff-9de0-4a0c-9e2f-757332ad392f.root",
-#        "/store/mc/Run3Summer22EENanoAODv12/GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/2530000/8f306f2b-1284-41b8-a98f-744267f64b9c.root",
+       "/store/mc/Run3Summer22NanoAODv12/GluGluHtoZZto4L_M-124p5_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/2520000/28b181a2-3ef5-4ffa-8e70-9eff44bcdc04.root",
         ])
-#    json = {"1": [[1245, 1245],[1306, 1306],[1410, 1410],[1692, 1692],[1903, 1903],[1910, 1910],[1915, 1915],[1927, 1927],[1939, 1939],[1940, 1940],[1944, 1944],[1945, 1945],[1956, 1956],[1960, 1960],[1965, 1965],[1967, 1967],[1968, 1968],[1969, 1969],[2104, 2104]]}
+
+ ################################################################################
+#root file from /GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg-jhugen-pythia8/Run3Summer23NanoAODv12-130X_mcRun3_2023_realistic_v15-v3/NANOAODSIM
+elif SampleToRun == "MC2023" :
+    # 2022 MC sample
+    setConf("SAMPLENAME", "ggH125")
+    setConf("DATA_TAG", "pre_BPix")
+    setConf("XSEC", 52.23*0.0002745)
+    setConf("LEPTON_SETUP", 2023)
+    setConf("IsMC", True)
+    setConf("APPLYELECORR", True)
+    setConf("APPLYMUCORR", True)
+    setConf("APPLYJETCORR", False)
+    setConf("FILTER_EVENTS", 'NoFilter')
+    setConf("store","root://cms-xrd-global.cern.ch/")
+    setConf("APPLY_QCD_GGF_UNCERT", True) # for ggH
+    setConf("fileNames",[
+    "/store/mc/Run3Summer23NanoAODv12/GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg-jhugen-pythia8/NANOAODSIM/130X_mcRun3_2023_realistic_v15-v3/50000/4cb201c2-3bfd-459f-8b1c-fb54ee1f8d3f.root",
+    ])
 
 
 ################################################################################
