@@ -44,9 +44,9 @@ bestCandByMELA = getConf("bestCandByMELA", True) # requires also runMELA=True
 TRIGPASSTHROUGH = getConf("TRIGPASSTHROUGH", False) # Do not filter events that do not pass triggers (HLT_passZZ4l records if they did)
 PROCESS_CR = getConf("PROCESS_CR", False) # fill control regions
 PROCESS_ZL = getConf("PROCESS_ZL", False) # fill ZL control region
-APPLYMUCORR = getConf("APPLYMUCORR", True) # apply muon momentum scale/resolution corrections
-APPLYELECORR = getConf("APPLYELECORR", True) # apply electron momentum scale/resolution corrections
-APPLYJETCORR = getConf("APPLYJETCORR", True) # apply jet corrections
+APPLYMUCORR = getConf("APPLYMUCORR", False) # apply muon momentum scale/resolution corrections
+APPLYELECORR = getConf("APPLYELECORR", False) # apply electron momentum scale/resolution corrections
+APPLYJETCORR = getConf("APPLYJETCORR", False) # apply jet corrections
 # ggH NNLOPS weight
 APPLY_QCD_GGF_UNCERT = getConf("APPLY_QCD_GGF_UNCERT", False)
 # K factors for ggZZ (and old NLO ggH samples) 0:None; 1: NNLO/LO; 2: NNLO/NLO; 3: NLO/LO

@@ -35,11 +35,22 @@ def getEleBDTCut(era, dataTag, nanoVersion, useUncorrPt=False) :
     # The WP was derived before scale corrections, so the uncorrected pt should be used when available.
     def eleBDTCut_RunIII_ULTraining_def(ele) :
         return(eleBDTCut_RunIII_ULTraining(ele.pt, abs(ele.eta + ele.deltaEtaSC), ele.mvaHZZIso))
+
+    def eleBDTCut_RunIII_2022Training_def(ele) :
+        return(eleBDTCut_RunIII_2022Training(ele.pt, abs(ele.eta + ele.deltaEtaSC), ele.mvaHZZIso))
         
     def eleBDTCut_RunIII_ULTraining_uncorr(ele) :
         return(eleBDTCut_RunIII_ULTraining(ele.uncorrected_pt, abs(ele.eta + ele.deltaEtaSC), ele.mvaHZZIso))
                
     def eleBDTCut_RunIII_ULTraining(pt, fSCeta, BDT) :
+        return (pt<=10. and     ((fSCeta<0.8                   and BDT > 0.9044286167) or \
+                                 (fSCeta>=0.8 and fSCeta<1.479 and BDT > 0.9094166886) or \
+                                 (fSCeta>=1.479                and BDT > 0.9443653660))) \
+               or (pt>10. and  ((fSCeta<0.8                   and BDT > 0.1968600840) or \
+                                (fSCeta>=0.8 and fSCeta<1.479 and BDT > 0.0759172100) or \
+                                (fSCeta>=1.479                and BDT > -0.5169136775)))
+
+    def eleBDTCut_RunIII_2022Training(pt, fSCeta, BDT) : #mvaHZZIso_HZZWP
         return (pt<=10. and     ((fSCeta<0.8                   and BDT > 0.9044286167) or \
                                  (fSCeta>=0.8 and fSCeta<1.479 and BDT > 0.9094166886) or \
                                  (fSCeta>=1.479                and BDT > 0.9443653660))) \
@@ -59,8 +70,11 @@ def getEleBDTCut(era, dataTag, nanoVersion, useUncorrPt=False) :
         if useUncorrPt:
             return eleBDTCut_RunIII_ULTraining_uncorr
         else :
-            return eleBDTCut_RunIII_ULTraining_def
-
+            if nanoVersion <=13:
+                return eleBDTCut_RunIII_ULTraining_def
+            else: 
+                return eleBDTCut_RunIII_2022Training_def
+                
     # Fallback: combination not supported
     raise ValueError('getEleBDTCut: era '+ str(era)+', dataTag ' + dataTag + ', nanoVersion ' + str(nanoVersion) + ' not supported')
 

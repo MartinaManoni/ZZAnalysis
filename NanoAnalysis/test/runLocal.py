@@ -15,7 +15,7 @@ if not validateCheckout() :
 #SampleToRun = "MCsync_2018Rereco" # for mini vs nano sync
 #SampleToRun = "MCsync_2017UL" # for mini vs nano sync
 #SampleToRun = "Data2022"
-SampleToRun = "MC2022"
+SampleToRun = "MC2023postBPix"
 #SampleToRun = "MELA_Test"
 #SampleToRun = "ggh125_2018UL"
 #SampleToRun = "forNanoDoc" # To prepare variable lists with inspectNanoFile.py
@@ -111,11 +111,52 @@ elif SampleToRun == "MC2022" :
     setConf("store","root://cms-xrd-global.cern.ch/")
     setConf("APPLY_QCD_GGF_UNCERT", True) # for ggH
     setConf("fileNames",[
-        "/store/mc/Run3Summer22EENanoAODv12/GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/2540000/25c8f5ff-9de0-4a0c-9e2f-757332ad392f.root",
+        "/store/mc/Run3Summer22EENanoAODv12/GluGluHtoZZto4L_M-125p5_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/2530000/ac88e9f6-73f9-4425-8b62-1be158e11208.root",
 #        "/store/mc/Run3Summer22EENanoAODv12/GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/2530000/8f306f2b-1284-41b8-a98f-744267f64b9c.root",
         ])
 #    json = {"1": [[1245, 1245],[1306, 1306],[1410, 1410],[1692, 1692],[1903, 1903],[1910, 1910],[1915, 1915],[1927, 1927],[1939, 1939],[1940, 1940],[1944, 1944],[1945, 1945],[1956, 1956],[1960, 1960],[1965, 1965],[1967, 1967],[1968, 1968],[1969, 1969],[2104, 2104]]}
+elif SampleToRun == "MC2022preEE" :
+    # 2022 MC sample
+    setConf("SAMPLENAME", "ggH125")
+    setConf("DATA_TAG", "pre_EE")
+    setConf("XSEC", 52.23*0.0002745)
+    setConf("LEPTON_SETUP", 2022)
+    setConf("IsMC", True)
+    setConf("store","root://cms-xrd-global.cern.ch/")
+    setConf("APPLY_QCD_GGF_UNCERT", True) # for ggH
+    setConf("fileNames",[
+        "/store/mc/Run3Summer22NanoAODv12/GluGluHtoZZto4L_M-125p5_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/2520000/1f8bdb75-40e6-422a-abb4-2ae51411e19f.root",
+        ])
 
+################################################################################
+elif SampleToRun == "MC2023preBPix" :
+    # 2022 MC sample
+    setConf("SAMPLENAME", "ggH125")
+    setConf("DATA_TAG", "pre_BPix")
+    setConf("XSEC", 52.23*0.0002745)
+    setConf("LEPTON_SETUP", 2023)
+    setConf("IsMC", True)
+    setConf("store","root://cms-xrd-global.cern.ch/")
+    setConf("APPLY_QCD_GGF_UNCERT", True) # for ggH
+    setConf("fileNames",[
+        "/store/mc/Run3Summer23NanoAODv12/GluGluHtoZZto4L_M-125p5_TuneCP5_13p6TeV_powheg-jhugen-pythia8/NANOAODSIM/130X_mcRun3_2023_realistic_v15-v3/50000/438d806f-37da-4df0-9c18-f4cc5217bbef.root",
+#        "/store/mc/Run3Summer22EENanoAODv12/GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/2530000/8f306f2b-1284-41b8-a98f-744267f64b9c.root",
+        ])
+
+elif SampleToRun == "MC2023postBPix" :
+    # 2022 MC sample
+    setConf("SAMPLENAME", "ggH125")
+    setConf("DATA_TAG", "post_BPix")
+    setConf("XSEC", 52.23*0.0002745)
+    setConf("LEPTON_SETUP", 2023)
+    setConf("IsMC", True)
+    setConf("store","root://cms-xrd-global.cern.ch/")
+    setConf("APPLY_QCD_GGF_UNCERT", True) # for ggH
+    setConf("fileNames",[
+        "/store/mc/Run3Summer23BPixNanoAODv12/GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg-jhugen-pythia8/NANOAODSIM/130X_mcRun3_2023_realistic_postBPix_v6-v2/25220000/a6e08653-9a82-4676-a0ed-acb47af5fa69.root",
+#        "/store/mc/Run3Summer22EENanoAODv12/GluGluHtoZZto4L_M-125_TuneCP5_13p6TeV_powheg2-JHUGenV752-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/2530000/8f306f2b-1284-41b8-a98f-744267f64b9c.root",
+        ])
+#    json = {"1": [[1245, 1245],[1306, 1306],[1410, 1410],[1692, 1692],[1903, 1903],[1910, 1910],[1915, 1915],[1927, 1927],[1939, 1939],[1940, 1940],[1944, 1944],[1945, 1945],[1956, 1956],[1960, 1960],[1965, 1965],[1967, 1967],[1968, 1968],[1969, 1969],[2104, 2104]]}
 
 ################################################################################
 elif SampleToRun == "forNanoDoc" :
