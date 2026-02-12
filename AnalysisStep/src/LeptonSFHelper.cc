@@ -12,6 +12,7 @@ static TFile* f_eleReco_lowPt_file  = nullptr;
 static TFile* f_eleID_file          = nullptr;
 static TFile* f_eleID_Cracks_file   = nullptr;
 static TFile* f_eleID_HoleBPix_file = nullptr;
+static TFile* f_eleID_Gap_file = nullptr;
 
 //static TFile* f_eleID_RMS_file = nullptr;
 
@@ -245,10 +246,10 @@ LeptonSFHelper::LeptonSFHelper(int year, std::string const &data_tag) :
    }
 
   if (f_eleID_Gap != "") { // to handle Gap regions [-1.556, -1.444], [1.444, 1.556] in 2023 and 2024 
-  TFile* root_file = TFile::Open(f_eleID_Gap.Data(), "READ");
-  h_Ele_ID_Gap = (TH2F*) root_file->Get("EGamma_SF2D")->Clone("h_Ele_ID_Gap");
+  f_eleID_Gap_file = TFile::Open(f_eleID_Gap.Data(), "READ");
+  h_Ele_ID_Gap = (TH2F*) f_eleID_Gap_file->Get("EGamma_SF2D")->Clone("h_Ele_ID_Gap");
   h_Ele_ID_Gap->SetDirectory(nullptr);
-  root_file->Close();
+  //root_file->Close();
   }
 
   f_eleReco_highPt_file = TFile::Open(f_eleReco_highPt.Data(),"READ");
@@ -326,6 +327,7 @@ LeptonSFHelper::~LeptonSFHelper() {
     if (f_eleID_file)          f_eleID_file->Close();
     if (f_eleID_Cracks_file)   f_eleID_Cracks_file->Close();
     if (f_eleID_HoleBPix_file) f_eleID_HoleBPix_file->Close();
+    if (f_eleID_Gap_file) f_eleID_Gap_file->Close();
 }
 
 
@@ -468,15 +470,34 @@ std::tuple<float,float,float,float> LeptonSFHelper::getSF_decorrUnc(int flav, fl
     }
 
     // --- ID (all years RMS)
+
+    bool isGap = (std::abs(SCeta) > 1.444 && std::abs(SCeta) < 1.556);
+    bool applyGapSF = (pt < 20.) &&
+                      isGap &&
+                      h_Ele_ID_Gap != nullptr &&
+                      (theYear == 2023 || theYear == 2024);
+
     int idBinX = h_Ele_ID->GetXaxis()->FindBin(SCeta);
     int idBinY = h_Ele_ID->GetYaxis()->FindBin(std::min(pt,499.f));
 
-    if(isCrack && h_Ele_ID_Cracks != nullptr) {
-        auto id_unc_rms = computeRecoUnc_RMS(f_eleID_Cracks_file, idBinX, idBinY);
+   if (applyGapSF) {
+
+        idBinX = h_Ele_ID_Gap->GetXaxis()->FindBin(SCeta);
+        idBinY = h_Ele_ID_Gap->GetYaxis()->FindBin(std::min(pt,499.f));
+
+        auto id_unc_rms = computeRecoUnc_RMS(f_eleID_Gap_file, idBinX, idBinY);
         SFError_ID_stat = id_unc_rms.stat;
         SFError_ID_syst = id_unc_rms.syst;
 
+        // 2023 postBPix: double uncertainty (stored squared → ×4)
+        if (isPostBPix_) {
+            SFError_ID_stat *= 4.0;
+            SFError_ID_syst *= 4.0;
+        }
+
     } else if(h_Ele_ID_HoleBPix != nullptr && (SCeta > -1.5 && SCeta < 0.0 && phi > -1.2 && phi < -0.8)) {
+        idBinX = h_Ele_ID_HoleBPix->GetXaxis()->FindBin(SCeta);
+        idBinY = h_Ele_ID_HoleBPix->GetYaxis()->FindBin(std::min(pt,499.f));
         auto id_unc_rms = computeRecoUnc_RMS(f_eleID_HoleBPix_file, idBinX, idBinY);
         SFError_ID_stat = id_unc_rms.stat;
         SFError_ID_syst = id_unc_rms.syst;
