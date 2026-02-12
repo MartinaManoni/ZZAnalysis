@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <tuple> // <-- needed for std::tuple
 
 #include <cmath>
 #include "TString.h"
@@ -16,7 +17,6 @@
 
 class LeptonSFHelper
 {
-
  public:
 
   LeptonSFHelper(int year, std::string const &data_tag);
@@ -24,7 +24,10 @@ class LeptonSFHelper
 
   /// return pair<SF, SFError>
   std::pair<float, float> getSF (int flav, float pt, float eta, float SCeta, float phi, bool isCrack) const;
-   
+
+  /// return decorrelated uncertainties: (RecoStat, RecoSyst, IDStat, IDSyst)
+  std::tuple<float,float,float,float> getSF_decorrUnc (int flav, float pt, float eta, float SCeta, float phi, bool isCrack) const;
+
  private:
   int theYear;
   std::string theDataTag;
@@ -34,6 +37,8 @@ class LeptonSFHelper
   TH2F *h_Ele_Reco_lowPt;
   TH2F *h_Ele_Reco_midPt;
   TH2F *h_Ele_Reco_highPt;
+
+  // Muon SF histograms
   TH2D *h_Mu_SF;
   TH2D *h_Mu_Unc;
   bool isPostBPix_;

@@ -1,8 +1,130 @@
 #include <ZZAnalysis/AnalysisStep/interface/LeptonSFHelper.h>
 
 #include <FWCore/MessageLogger/interface/MessageLogger.h>
+#include <cmath>
 
 using namespace std;
+
+
+static TFile* f_eleReco_highPt_file = nullptr;
+static TFile* f_eleReco_midPt_file  = nullptr;
+static TFile* f_eleReco_lowPt_file  = nullptr;
+static TFile* f_eleID_file          = nullptr;
+static TFile* f_eleID_Cracks_file   = nullptr;
+static TFile* f_eleID_HoleBPix_file = nullptr;
+
+//static TFile* f_eleID_RMS_file = nullptr;
+
+struct RecoUncComponents {
+  float stat = 0.f;
+  float syst = 0.f;
+};
+
+struct RecoRMSUncComponents {
+    float total = 0.f;
+    float stat  = 0.f;
+    float syst  = 0.f;
+};
+
+
+RecoUncComponents
+computeRecoUnc_NoRMS(
+    TFile* file,
+    int binX,
+    int binY
+) {
+  RecoUncComponents unc;
+
+  auto* h_statData = (TH2F*) file->Get("statData");
+  auto* h_statMC   = (TH2F*) file->Get("statMC");
+
+  auto* h_altBkg   = (TH2F*) file->Get("altBkgModel");
+  auto* h_altSig   = (TH2F*) file->Get("altSignalModel");
+  auto* h_altMC    = (TH2F*) file->Get("altMCEff");
+  auto* h_altTag   = (TH2F*) file->Get("altTagSelection");
+
+  if (!h_statData || !h_statMC ||
+      !h_altBkg   || !h_altSig ||
+      !h_altMC    || !h_altTag) {
+    edm::LogError("LeptonSFHelper")
+      << "Missing uncertainty histograms in RECO SF file";
+    return unc;
+  }
+
+  // --- statistical
+  float sData = h_statData->GetBinContent(binX, binY);
+  float sMC   = h_statMC  ->GetBinContent(binX, binY);
+
+  unc.stat = sData*sData + sMC*sMC;
+
+  // --- systematic
+  float sBkg = h_altBkg->GetBinContent(binX, binY);
+  float sSig = h_altSig->GetBinContent(binX, binY);
+  float sMCe = h_altMC ->GetBinContent(binX, binY);
+  float sTag = h_altTag->GetBinContent(binX, binY);
+
+  unc.syst =
+      sBkg*sBkg +
+      sSig*sSig +
+      sMCe*sMCe +
+      sTag*sTag
+  ;
+
+  return unc;
+}
+
+RecoRMSUncComponents
+computeRecoUnc_RMS(TFile* file, int binX, int binY)
+{
+    RecoRMSUncComponents unc;
+
+    auto* h_statData = (TH2F*) file->Get("statData");
+    auto* h_statMC   = (TH2F*) file->Get("statMC");
+
+    auto* h_nominal     = (TH2F*) file->Get("nominal");
+    auto* h_altBkg      = (TH2F*) file->Get("altBkgModel");
+    auto* h_altSig      = (TH2F*) file->Get("altSignalModel");
+    auto* h_altSigBkg   = (TH2F*) file->Get("altSigBkgModel");
+    auto* h_altMC       = (TH2F*) file->Get("altMC");
+
+    if (!h_statData || !h_statMC || !h_nominal || !h_altBkg || !h_altSig || !h_altSigBkg || !h_altMC) {
+        edm::LogError("LeptonSFHelper") << "Missing RMS histograms in RECO SF file";
+        return unc;
+    }
+
+    // --- Statistical uncertainties
+    float sData = h_statData->GetBinContent(binX, binY);
+    float sMC   = h_statMC  ->GetBinContent(binX, binY);
+    float altMCErr = h_altMC->GetBinContent(binX, binY);
+    //float mcStat = std::max(sMC*sMC, altMCErr*altMCErr);
+
+    unc.stat = sData*sData + sMC*sMC;
+
+    // --- RMS systematic
+    double values[4] = {
+        h_nominal->GetBinContent(binX, binY),
+        h_altSig ->GetBinContent(binX, binY),
+        h_altBkg ->GetBinContent(binX, binY),
+        h_altSigBkg->GetBinContent(binX, binY)
+    };
+
+    // --- RMS systematic as sum in quadrature
+    float nomVal    = h_nominal   ->GetBinContent(binX, binY);
+    float altSigVal = h_altSig    ->GetBinContent(binX, binY);
+    float altBkgVal = h_altBkg    ->GetBinContent(binX, binY);
+    float altSigBkgVal = h_altSigBkg->GetBinContent(binX, binY);
+
+    const int N = 4;
+    float sumSq = nomVal*nomVal + altSigVal*altSigVal + altBkgVal*altBkgVal + altSigBkgVal*altSigBkgVal;
+    float rms = std::sqrt(sumSq / (N-1));
+
+    unc.syst = (rms/std::sqrt(N))*(rms/std::sqrt(N));
+
+    // --- Total uncertainty
+    unc.total = std::sqrt(unc.syst + unc.stat);
+
+    return unc;
+}
 
 LeptonSFHelper::LeptonSFHelper(int year, std::string const &data_tag) :
   theYear(year),
@@ -109,17 +231,17 @@ LeptonSFHelper::LeptonSFHelper(int year, std::string const &data_tag) :
     edm::LogError("LeptonSFHelper::") << "Ele SFs for " << year << " is not supported!";
     abort();
   }
-  
-  TFile* root_file = TFile::Open(f_eleID.Data(),"READ");
-  h_Ele_ID = (TH2F*) root_file->Get("EGamma_SF2D")->Clone("h_Ele_ID");
+
+  f_eleID_file = TFile::Open(f_eleID.Data(),"READ");
+  h_Ele_ID = (TH2F*)f_eleID_file->Get("EGamma_SF2D")->Clone("h_Ele_ID");
   h_Ele_ID->SetDirectory(nullptr); // This is required to detach the clone from the file
-  root_file->Close();
+  //root_file->Close();
 
   if (f_eleID_HoleBPix != "") {
-    TFile* root_file = TFile::Open(f_eleID_HoleBPix.Data(),"READ");
-    h_Ele_ID_HoleBPix = (TH2F*) root_file->Get("EGamma_SF2D")->Clone("h_Ele_ID");
+    f_eleID_HoleBPix_file = TFile::Open(f_eleID_HoleBPix.Data(),"READ");
+    h_Ele_ID_HoleBPix = (TH2F*) f_eleID_HoleBPix_file->Get("EGamma_SF2D")->Clone("h_Ele_ID");
     h_Ele_ID_HoleBPix->SetDirectory(nullptr); // This is required to detach the clone from the file
-    root_file->Close();
+    //root_file->Close();
    }
 
   if (f_eleID_Gap != "") { // to handle Gap regions [-1.556, -1.444], [1.444, 1.556] in 2023 and 2024 
@@ -128,22 +250,19 @@ LeptonSFHelper::LeptonSFHelper(int year, std::string const &data_tag) :
   h_Ele_ID_Gap->SetDirectory(nullptr);
   root_file->Close();
   }
-  
-  root_file = TFile::Open(f_eleReco_highPt.Data(),"READ");
-  h_Ele_Reco_highPt = (TH2F*) root_file->Get("EGamma_SF2D")->Clone("h_Ele_Reco_highPt");
-  h_Ele_Reco_highPt->SetDirectory(nullptr);
-  root_file->Close();
 
-  root_file = TFile::Open(f_eleReco_lowPt.Data(),"READ");
-  h_Ele_Reco_lowPt = (TH2F*) root_file->Get("EGamma_SF2D")->Clone("h_Ele_Reco_lowPt");
+  f_eleReco_highPt_file = TFile::Open(f_eleReco_highPt.Data(),"READ");
+  h_Ele_Reco_highPt =(TH2F*) f_eleReco_highPt_file->Get("EGamma_SF2D")->Clone("h_Ele_Reco_highPt");
+  h_Ele_Reco_highPt->SetDirectory(nullptr);
+
+  f_eleReco_lowPt_file = TFile::Open(f_eleReco_lowPt.Data(),"READ");
+  h_Ele_Reco_lowPt =(TH2F*) f_eleReco_lowPt_file->Get("EGamma_SF2D")->Clone("h_Ele_Reco_lowPt");
   h_Ele_Reco_lowPt->SetDirectory(nullptr);
-  root_file->Close();
 
   if (f_eleReco_midPt != "") {
-    root_file = TFile::Open(f_eleReco_midPt.Data(),"READ");
-    h_Ele_Reco_midPt = (TH2F*) root_file->Get("EGamma_SF2D")->Clone("h_Ele_Reco_midPt");
+    f_eleReco_midPt_file = TFile::Open(f_eleReco_midPt.Data(),"READ");
+    h_Ele_Reco_midPt =(TH2F*) f_eleReco_midPt_file->Get("EGamma_SF2D")->Clone("h_Ele_Reco_midPt");
     h_Ele_Reco_midPt->SetDirectory(nullptr);
-    root_file->Close();
   }
 
 
@@ -189,7 +308,7 @@ LeptonSFHelper::LeptonSFHelper(int year, std::string const &data_tag) :
     abort();
   }
 
-  root_file = TFile::Open(f_mu.Data(),"READ");
+  TFile* root_file = TFile::Open(f_mu.Data(),"READ");
   h_Mu_SF  = (TH2D*)root_file->Get("FINAL")->Clone("h_Mu_SF");
   h_Mu_Unc = (TH2D*)root_file->Get("ERROR")->Clone("h_Mu_Unc");
   h_Mu_SF->SetDirectory(nullptr);
@@ -199,7 +318,16 @@ LeptonSFHelper::LeptonSFHelper(int year, std::string const &data_tag) :
   cout << "[LeptonSFHelper] SF maps opened from root files for " << year << " " << data_tag << endl;
 }
 
-LeptonSFHelper::~LeptonSFHelper() {}
+
+LeptonSFHelper::~LeptonSFHelper() {
+    if (f_eleReco_lowPt_file)  f_eleReco_lowPt_file->Close();
+    if (f_eleReco_midPt_file)  f_eleReco_midPt_file->Close();
+    if (f_eleReco_highPt_file) f_eleReco_highPt_file->Close();
+    if (f_eleID_file)          f_eleID_file->Close();
+    if (f_eleID_Cracks_file)   f_eleID_Cracks_file->Close();
+    if (f_eleID_HoleBPix_file) f_eleID_HoleBPix_file->Close();
+}
+
 
 pair<float, float> LeptonSFHelper::getSF(int flav, float pt, float eta, float SCeta, float phi, bool isCrack) const
 {
@@ -277,4 +405,87 @@ pair<float, float> LeptonSFHelper::getSF(int flav, float pt, float eta, float SC
    }
 
    return std::make_pair(SF, SFError);
+}
+
+
+#include <tuple> // for std::tuple
+
+std::tuple<float,float,float,float> LeptonSFHelper::getSF_decorrUnc(int flav, float pt, float eta, float SCeta, float phi, bool isCrack) const
+{
+    float SFError_RECO_stat = 0.0;
+    float SFError_RECO_syst = 0.0;
+    float SFError_ID_stat   = 0.0;
+    float SFError_ID_syst   = 0.0;
+
+    // Only electrons
+    if(abs(flav) != 11) return std::make_tuple(0.,0.,0.,0.);
+
+    int binX = 0, binY = 0;
+
+    // --- RECO
+    if(pt < 20.) {
+        float SCeta_lowPt = (theYear == 2022) ? std::abs(SCeta) : SCeta;
+        binX = h_Ele_Reco_lowPt->GetXaxis()->FindBin(SCeta_lowPt);
+        binY = h_Ele_Reco_lowPt->GetYaxis()->FindBin(15.);
+
+        if(theYear == 2022 || theYear == 2024) { // use RMS
+            auto unc_rms = computeRecoUnc_RMS(f_eleReco_lowPt_file, binX, binY);
+            SFError_RECO_stat = unc_rms.stat;
+            SFError_RECO_syst = unc_rms.syst;
+        } else { // 2023 legacy
+            auto unc_noRMS = computeRecoUnc_NoRMS(f_eleReco_lowPt_file, binX, binY);
+            SFError_RECO_stat = unc_noRMS.stat;
+            SFError_RECO_syst = unc_noRMS.syst;
+        }
+
+    } else if(pt < 75. && h_Ele_Reco_midPt != nullptr) {
+        binX = h_Ele_Reco_midPt->GetXaxis()->FindBin(SCeta);
+        binY = h_Ele_Reco_midPt->GetYaxis()->FindBin(std::min(pt,75.f));
+
+        if(theYear == 2024) { // use RMS
+            auto unc_rms = computeRecoUnc_RMS(f_eleReco_midPt_file, binX, binY);
+            SFError_RECO_stat = unc_rms.stat;
+            SFError_RECO_syst = unc_rms.syst;
+        } else {
+            auto unc_noRMS = computeRecoUnc_NoRMS(f_eleReco_midPt_file, binX, binY);
+            SFError_RECO_stat = unc_noRMS.stat;
+            SFError_RECO_syst = unc_noRMS.syst;
+        }
+
+    } else {
+        binX = h_Ele_Reco_highPt->GetXaxis()->FindBin(SCeta);
+        binY = h_Ele_Reco_highPt->GetYaxis()->FindBin(std::min(pt,499.f));
+
+        if(theYear == 2024) { // use RMS
+            auto unc_rms = computeRecoUnc_RMS(f_eleReco_highPt_file, binX, binY);
+            SFError_RECO_stat = unc_rms.stat;
+            SFError_RECO_syst = unc_rms.syst;
+        } else {
+            auto unc_noRMS = computeRecoUnc_NoRMS(f_eleReco_highPt_file, binX, binY);
+            SFError_RECO_stat = unc_noRMS.stat;
+            SFError_RECO_syst = unc_noRMS.syst;
+        }
+    }
+
+    // --- ID (all years RMS)
+    int idBinX = h_Ele_ID->GetXaxis()->FindBin(SCeta);
+    int idBinY = h_Ele_ID->GetYaxis()->FindBin(std::min(pt,499.f));
+
+    if(isCrack && h_Ele_ID_Cracks != nullptr) {
+        auto id_unc_rms = computeRecoUnc_RMS(f_eleID_Cracks_file, idBinX, idBinY);
+        SFError_ID_stat = id_unc_rms.stat;
+        SFError_ID_syst = id_unc_rms.syst;
+
+    } else if(h_Ele_ID_HoleBPix != nullptr && (SCeta > -1.5 && SCeta < 0.0 && phi > -1.2 && phi < -0.8)) {
+        auto id_unc_rms = computeRecoUnc_RMS(f_eleID_HoleBPix_file, idBinX, idBinY);
+        SFError_ID_stat = id_unc_rms.stat;
+        SFError_ID_syst = id_unc_rms.syst;
+
+    } else {
+        auto id_unc_rms = computeRecoUnc_RMS(f_eleID_file, idBinX, idBinY);
+        SFError_ID_stat = id_unc_rms.stat;
+        SFError_ID_syst = id_unc_rms.syst;
+    }
+
+    return std::make_tuple(SFError_RECO_stat, SFError_RECO_syst, SFError_ID_stat, SFError_ID_syst);
 }

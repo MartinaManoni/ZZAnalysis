@@ -16,15 +16,25 @@ class lepDataMCWeight(Module):
 
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         self.out = wrappedOutputTree
+
+        # Original SF branches
         self.out.branch("Muon_dataMC", "F", lenVar="nMuon", title="data/MC correction", limitedPrecision=12)
         self.out.branch("Muon_dataMCUnc", "F", lenVar="nMuon", title="data/MC correction relative uncertainty", limitedPrecision=12)
         self.out.branch("Electron_dataMC", "F", lenVar="nElectron", title="data/MC correction", limitedPrecision=12)
         self.out.branch("Electron_dataMCUnc", "F", lenVar="nElectron", title="data/MC correction relative uncertainty", limitedPrecision=12)
 
+        # Decorrelated uncertainty branches (electrons only)
+        self.out.branch("Electron_RECO_statUnc", "F", lenVar="nElectron", title="electron RECO statistical uncertainty", limitedPrecision=12)
+        self.out.branch("Electron_RECO_systUnc", "F", lenVar="nElectron", title="electron RECO systematic uncertainty", limitedPrecision=12)
+        self.out.branch("Electron_ID_statUnc", "F", lenVar="nElectron", title="electron ID statistical uncertainty", limitedPrecision=12)
+        self.out.branch("Electron_ID_systUnc", "F", lenVar="nElectron", title="electron ID systematic uncertainty", limitedPrecision=12)
+
+
     def analyze(self, event):
         electrons = Collection(event, "Electron")
         muons = Collection(event, "Muon")
 
+        # --- Original SFs
         e_SFs = [1.]*event.nElectron
         e_SFsUnc = [1.]*event.nElectron
         for ie, ele in enumerate(electrons):
@@ -34,11 +44,29 @@ class lepDataMCWeight(Module):
         m_SFsUnc = [1.]*event.nMuon
         for im, mu in enumerate(muons):
             m_SFs[im], m_SFsUnc[im] = self.getLepSF(mu)
-        
+
         self.out.fillBranch("Electron_dataMC", e_SFs)    
         self.out.fillBranch("Electron_dataMCUnc", e_SFsUnc)
         self.out.fillBranch("Muon_dataMC", m_SFs)
         self.out.fillBranch("Muon_dataMCUnc", m_SFsUnc)
+
+        # --- Decorrelated electron uncertainties
+        e_RECO_stat = [0.]*event.nElectron
+        e_RECO_syst = [0.]*event.nElectron
+        e_ID_stat   = [0.]*event.nElectron
+        e_ID_syst   = [0.]*event.nElectron
+
+        for ie, ele in enumerate(electrons):
+            reco_stat, reco_syst, id_stat, id_syst = self.getLepSF_decorr(ele)
+            e_RECO_stat[ie] = reco_stat
+            e_RECO_syst[ie] = reco_syst
+            e_ID_stat[ie]   = id_stat
+            e_ID_syst[ie]   = id_syst
+
+        self.out.fillBranch("Electron_RECO_statUnc", e_RECO_stat)
+        self.out.fillBranch("Electron_RECO_systUnc", e_RECO_syst)
+        self.out.fillBranch("Electron_ID_statUnc", e_ID_stat)
+        self.out.fillBranch("Electron_ID_systUnc", e_ID_syst)
 
         return True
 
@@ -68,3 +96,52 @@ class lepDataMCWeight(Module):
             SF, SFerror = 1., 0.5
         return SF, SFerror
       
+
+    def getLepSF_decorr(self, lep):
+        """Return lepton SF uncertainties split into RECO/ID stat/syst (electrons only)."""
+
+        myLepID = abs(lep.pdgId)
+        mySCeta = lep.eta
+        isCrack = False  # FIXME: cannot recompute from nanoAODs
+        isHoleBPix = False
+
+        # Only electrons have decorrelated uncertainties
+        if myLepID != 11:
+            return 0., 0., 0., 0.
+
+        # Use SC eta for electrons
+        mySCeta = lep.eta + lep.deltaEtaSC
+
+        # Protect SCeta from out-of-bounds
+        mySCeta = min(max(mySCeta, -2.49), 2.49)
+
+        # Call the C++ function
+        reco_stat, reco_syst, id_stat, id_syst = self.lepSFHelper.getSF_decorrUnc(
+            myLepID,
+            lep.pt,
+            lep.eta,
+            mySCeta,
+            lep.phi,
+            isCrack
+        )
+
+        # Get the corresponding SF
+        SF, SFerror = self.getLepSF(lep)
+
+        # Convert absolute uncertainties to relative uncertainties
+        if SF != 0:
+            reco_stat /= SF
+            reco_syst  /= SF
+            id_stat    /= SF
+            id_syst    /= SF
+        else:
+            # protect against division by zero
+            reco_stat, reco_syst, id_stat, id_syst = 0.5, 0.5, 0.5, 0.5
+
+        return reco_stat, reco_syst, id_stat, id_syst
+
+        # Protection for very rare edge cases (pt out-of-range etc.)
+        #if reco_stat == 0 and reco_syst == 0 and id_stat == 0 and id_syst == 0:
+            #reco_stat, reco_syst, id_stat, id_syst = 0., 0., 0., 0.
+
+        #return reco_stat, reco_syst, id_stat, id_syst
