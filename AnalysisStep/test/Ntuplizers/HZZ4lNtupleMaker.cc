@@ -2754,8 +2754,8 @@ Float_t HZZ4lNtupleMaker::getAllWeight(const vector<const reco::Candidate*>& lep
     else isCrack = false;
 
     auto SFandUnc = lepSFHelper->getSF(myLepID,myLepPt,myLepEta, mySCeta, myLepPhi, isCrack);
-    SF = SFandUnc.first;
-    SF_Unc = SFandUnc.second;
+    SF     = std::get<0>(SFandUnc);
+    SF_Unc = std::get<1>(SFandUnc);
 
     LepSF.push_back(SF);
     LepSF_Unc.push_back(SF_Unc);

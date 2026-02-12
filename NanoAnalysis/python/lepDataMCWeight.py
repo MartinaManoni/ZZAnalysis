@@ -29,6 +29,9 @@ class lepDataMCWeight(Module):
         self.out.branch("Electron_ID_statUnc", "F", lenVar="nElectron", title="electron ID statistical uncertainty", limitedPrecision=12)
         self.out.branch("Electron_ID_systUnc", "F", lenVar="nElectron", title="electron ID systematic uncertainty", limitedPrecision=12)
 
+        self.out.branch("Electron_dataMC_RECO", "F", lenVar="nElectron", title="electron ID statistical uncertainty", limitedPrecision=12)
+        self.out.branch("Electron_dataMC_ID", "F", lenVar="nElectron", title="electron ID systematic uncertainty", limitedPrecision=12)
+
 
     def analyze(self, event):
         electrons = Collection(event, "Electron")
@@ -37,15 +40,21 @@ class lepDataMCWeight(Module):
         # --- Original SFs
         e_SFs = [1.]*event.nElectron
         e_SFsUnc = [1.]*event.nElectron
+        e_SFsRECO= [1.]*event.nElectron
+        e_SFsID= [1.]*event.nElectron
         for ie, ele in enumerate(electrons):
-            e_SFs[ie], e_SFsUnc[ie] = self.getLepSF(ele)
+            e_SFs[ie], e_SFsUnc[ie],e_SFsRECO[ie],e_SFsID[ie] = self.getLepSF(ele)
 
         m_SFs = [1.]*event.nMuon
         m_SFsUnc = [1.]*event.nMuon
+        m_SFsRECO = [1.]*event.nMuon
+        m_SFsID = [1.]*event.nMuon
         for im, mu in enumerate(muons):
-            m_SFs[im], m_SFsUnc[im] = self.getLepSF(mu)
+            m_SFs[im], m_SFsUnc[im], m_SFsRECO[im],m_SFsID[im]  = self.getLepSF(mu)
 
-        self.out.fillBranch("Electron_dataMC", e_SFs)    
+        self.out.fillBranch("Electron_dataMC", e_SFs)
+        self.out.fillBranch("Electron_dataMC_RECO", e_SFsRECO)  
+        self.out.fillBranch("Electron_dataMC_ID", e_SFsID)    
         self.out.fillBranch("Electron_dataMCUnc", e_SFsUnc)
         self.out.fillBranch("Muon_dataMC", m_SFs)
         self.out.fillBranch("Muon_dataMCUnc", m_SFsUnc)
@@ -86,15 +95,18 @@ class lepDataMCWeight(Module):
         mySCeta = min(mySCeta,2.49)
         mySCeta = max(mySCeta,-2.49)
 
-        pair = self.lepSFHelper.getSF(myLepID, lep.pt, lep.eta, mySCeta, lep.phi, isCrack)
-        SF = pair.first
-        SFerror = pair.second
+        SF, SFerror, SFReco, SFID = self.lepSFHelper.getSF(myLepID, lep.pt, lep.eta, mySCeta, lep.phi, isCrack)
 
         # Add a protection for leptons outside standard acceptance (pt<5/7 for mu/ele or |eta|>2.4 for mu) which get SF=0 and SFError = nan, since they may be still
         # be used for dedicated studies
         if SF==0 :
             SF, SFerror = 1., 0.5
-        return SF, SFerror
+        if SFReco == 0:
+            SFReco = 1.
+        if SFID == 0:
+            SFID = 1.
+
+        return SF, SFerror, SFReco, SFID
       
 
     def getLepSF_decorr(self, lep):
@@ -126,16 +138,10 @@ class lepDataMCWeight(Module):
         )
 
         # Get the corresponding SF
-        SF, SFerror = self.getLepSF(lep)
+        SF, SFerror, SFReco, SFID= self.getLepSF(lep)
 
         # Convert absolute uncertainties to relative uncertainties
-        if SF != 0:
-            reco_stat /= SF
-            reco_syst  /= SF
-            id_stat    /= SF
-            id_syst    /= SF
-        else:
-            # protect against division by zero
+        if SF ==0:
             reco_stat, reco_syst, id_stat, id_syst = 0.5, 0.5, 0.5, 0.5
 
         return reco_stat, reco_syst, id_stat, id_syst

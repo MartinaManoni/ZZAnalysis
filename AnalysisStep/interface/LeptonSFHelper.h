@@ -23,7 +23,7 @@ class LeptonSFHelper
   ~LeptonSFHelper();
 
   /// return pair<SF, SFError>
-  std::pair<float, float> getSF (int flav, float pt, float eta, float SCeta, float phi, bool isCrack) const;
+  std::tuple<float,float,float,float>  getSF (int flav, float pt, float eta, float SCeta, float phi, bool isCrack) const;
 
   /// return decorrelated uncertainties: (RecoStat, RecoSyst, IDStat, IDSyst)
   std::tuple<float,float,float,float> getSF_decorrUnc (int flav, float pt, float eta, float SCeta, float phi, bool isCrack) const;

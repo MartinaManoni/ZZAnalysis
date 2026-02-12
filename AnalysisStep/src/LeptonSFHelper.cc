@@ -331,7 +331,7 @@ LeptonSFHelper::~LeptonSFHelper() {
 }
 
 
-pair<float, float> LeptonSFHelper::getSF(int flav, float pt, float eta, float SCeta, float phi, bool isCrack) const
+std::tuple<float,float,float,float> LeptonSFHelper::getSF(int flav, float pt, float eta, float SCeta, float phi, bool isCrack) const
 {
 
   if (isCrack) {
@@ -341,6 +341,9 @@ pair<float, float> LeptonSFHelper::getSF(int flav, float pt, float eta, float SC
    float RecoSF = 1.0;
    float SelSF = 1.0;
    float SF = 1.0;
+
+   float SFReco = 1.0;
+   float SFID = 1.0;
 
    float RecoSF_Unc = 0.0;
    float SelSF_Unc = 0.0;
@@ -392,7 +395,9 @@ pair<float, float> LeptonSFHelper::getSF(int flav, float pt, float eta, float SC
        SelSF_Unc = h_Ele_ID->GetBinError  (h_Ele_ID->FindFixBin(SCeta, std::min(pt,499.f)));
      }
 
-     SF = RecoSF*SelSF;   
+     SF = RecoSF*SelSF;  
+     SFReco = RecoSF;
+     SFID = SelSF;
      SFError = sqrt( RecoSF_Unc*RecoSF_Unc/(RecoSF*RecoSF) + SelSF_Unc*SelSF_Unc/(SelSF*SelSF) ); // assume full correlation between different electrons (and uncorrelated reco and sel uncertainties)
    }
 
@@ -406,7 +411,7 @@ pair<float, float> LeptonSFHelper::getSF(int flav, float pt, float eta, float SC
      SFError = SelSF_Unc/SelSF; // assume full correlation between different muons (and uncorrelated reco and sel uncertainties)
    }
 
-   return std::make_pair(SF, SFError);
+   return std::make_tuple(SF, SFError, SFReco, SFID);
 }
 
 

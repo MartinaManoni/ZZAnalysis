@@ -1205,7 +1205,7 @@ Float_t ZNtupleMaker::getAllWeight(const reco::Candidate* Lep)
  if (myLepID == 11) isCrack = userdatahelpers::getUserFloat(Lep,"isCrack");
  else isCrack = false;
 
- SF = (lepSFHelper->getSF(myLepID,myLepPt,myLepEta, mySCeta, myLepPhi, isCrack)).first;
+ SF = std::get<0>(lepSFHelper->getSF(myLepID, myLepPt, myLepEta, mySCeta, myLepPhi, isCrack));
  //SF_Unc = (lepSFHelper->getSFError(myLepID,myLepPt,myLepEta, mySCeta, isCrack)).second;
 
  return SF;

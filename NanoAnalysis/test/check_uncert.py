@@ -3,7 +3,8 @@ import awkward as ak
 import numpy as np
 import matplotlib.pyplot as plt
 
-file_name = "25c8f5ff-9de0-4a0c-9e2f-757332ad392f_Skim.root"
+#file_name = "25c8f5ff-9de0-4a0c-9e2f-757332ad392f_Skim.root"
+file_name = "/eos/user/m/mmanoni/DecorrEleUncert_ggH_TEST/PROD_samplesNano_2022_MC_76fc2a20/ggH125/ZZ4lAnalysis.root"
 tree_name = "Events"
 
 with uproot.open(file_name) as f:
