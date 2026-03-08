@@ -141,8 +141,11 @@ class lepDataMCWeight(Module):
         SF, SFerror, SFReco, SFID= self.getLepSF(lep)
 
         # Convert absolute uncertainties to relative uncertainties
-        if SF ==0:
-            reco_stat, reco_syst, id_stat, id_syst = 0.5, 0.5, 0.5, 0.5
+        if SFReco ==0:
+            reco_stat, reco_syst = 0.25, 0.25
+            
+        if SFID == 0:
+            id_stat, id_syst = 0.25, 0.25
 
         return reco_stat, reco_syst, id_stat, id_syst
 

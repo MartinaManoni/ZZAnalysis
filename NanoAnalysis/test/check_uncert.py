@@ -3,8 +3,8 @@ import awkward as ak
 import numpy as np
 import matplotlib.pyplot as plt
 
-#file_name = "25c8f5ff-9de0-4a0c-9e2f-757332ad392f_Skim.root"
-file_name = "/eos/user/m/mmanoni/DecorrEleUncert_ggH_TEST/PROD_samplesNano_2022_MC_76fc2a20/ggH125/ZZ4lAnalysis.root"
+file_name = "25c8f5ff-9de0-4a0c-9e2f-757332ad392f_Skim.root"
+#file_name = "/eos/user/m/mmanoni/DecorrEleUncert_ggH_TEST/PROD_samplesNano_2022_MC_76fc2a20/ggH125/ZZ4lAnalysis.root"
 tree_name = "Events"
 
 with uproot.open(file_name) as f:
@@ -17,19 +17,24 @@ with uproot.open(file_name) as f:
     RECO_syst = tree["Electron_RECO_systUnc"].array()
     ID_stat   = tree["Electron_ID_statUnc"].array()
     ID_syst   = tree["Electron_ID_systUnc"].array()
+    
+    SF_RECO = tree["Electron_dataMC_RECO"].array()
+    SF_ID = tree["Electron_dataMC_ID"].array()
 
     # Compute total from components (keeping your original formula)
     total_from_components = np.sqrt(RECO_stat + RECO_syst + ID_stat + ID_syst)
+    Unc_ori = dataMC*SF
+    SF_check = SF_RECO*SF_ID
     #error = total_from_components / SF
 
     # Print side by side per electron per event
     for i in range(len(dataMC)):
         print(f"Event {i}:")
-        for j, (sf, dmc, tot, RECO_stat_, RECO_syst_, ID_stat_, ID_syst_) in enumerate(
-            zip(SF[i], dataMC[i], total_from_components[i], RECO_stat[i], RECO_syst[i], ID_stat[i], ID_syst[i])
+        for j, (sf, dmc, tot, RECO_stat_, RECO_syst_, ID_stat_, ID_syst_, SF_check_) in enumerate(
+            zip(SF[i], Unc_ori[i], total_from_components[i], RECO_stat[i], RECO_syst[i], ID_stat[i], ID_syst[i], SF_check[i])
         ):
-            print(f"  Electron {j:2d} | SF = {sf:.5f}| SFUnc/SF_original = {dmc:.5f} |"
-                  f" SFUnc/SF = {tot:.5f} | RECO_stat={RECO_stat_:.5f} | RECO_syst={RECO_syst_:.5f} |"
+            print(f"  Electron {j:2d} | SF_original = {sf:.5f}| SF = {SF_check_:.5f}| SFUnc = {dmc:.5f} |"
+                  f" SFUnc_check = {tot:.5f} | RECO_stat={RECO_stat_:.5f} | RECO_syst={RECO_syst_:.5f} |"
                   f" ID_stat={ID_stat_:.5f} | ID_syst={ID_syst_:.5f}")
 
     # Mask electrons with SF != 1
