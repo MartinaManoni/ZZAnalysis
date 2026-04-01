@@ -54,6 +54,7 @@ public:
       MAX_NUM_OF_CATEGORIES
    };
    
+   /*
    enum _category_STXS
    {
       ggH_0J_PTH_0_10     = 0,
@@ -81,6 +82,26 @@ public:
       inclusive_stxs        = 22,
       MAX_NUM_OF_CATEGORIES_STXS
    };
+   */
+
+   enum _category_STXS
+     {
+	  // noCat     = 0,
+     // inclusive_stxs   = 1,
+
+     //zerojet = 0,
+     //gt_zerojet = 1,
+
+     onejet = 0,
+     notonejet = 1,
+
+     //twojet = 0,
+     //lt_twojet = 1,
+	  
+     inclusive_stxs   = 2,
+     
+	  MAX_NUM_OF_CATEGORIES_STXS
+	};
 
    enum _eta_bins
 	{

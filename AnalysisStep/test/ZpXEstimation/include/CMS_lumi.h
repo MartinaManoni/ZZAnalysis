@@ -40,7 +40,7 @@ private:
    // ratio of "CMS" and extra text size
    float extraOverCmsTextSize  = 0.76;
    
-   TString lumi_sqrtS = " fb^{-1} (13 TeV)";
+   TString lumi_sqrtS = " fb^{-1} (13.6 TeV)";
       
    bool drawLogo = false;    
 };
