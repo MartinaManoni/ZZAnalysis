@@ -231,7 +231,7 @@ def getJetCorrected(era, tag, is_mc, overwritePt=True) :
     # Apply run-dependent JEC only for 2023 data (not MC)
     useRunDependentJEC = (era == 2023 or era == 2024 or era == 2025) and (not is_mc)
     # Use Splittign scheme for Jets uncertainties (11 sources)
-    useJesSplittingScheme11 = False # Default
+    useJesSplittingScheme11 = True # Default
 
     scaleKey = scaleKeyRegrouped11 if useJesSplittingScheme11 else scaleTotalKey
 

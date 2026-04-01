@@ -1,6 +1,30 @@
 #ifndef CATEGORY_H
 #define CATEGORY_H
 
+enum noCategories {
+  noCat = 0
+};
+
+extern "C" int noCategories( );
+
+
+//---------- RunIII TEST ----------//
+
+enum RUNIII {
+
+  //zerojet = 0,
+  //gt_zerojet = 1
+
+  onejet = 0,
+  notonejet = 1
+
+  //twojet = 0,
+  //lt_twojet = 1,
+
+};
+
+extern "C" int RUNIII( int Nj );
+
 
 
 //---------- RunI categorization 

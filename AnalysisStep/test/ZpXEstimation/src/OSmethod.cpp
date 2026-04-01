@@ -36,28 +36,41 @@ OSmethod::OSmethod():Tree()
    _s_category.push_back("VHMETTagged");
    _s_category.push_back("Inclusive");
    
-   _s_category_stxs.push_back("ggH_0J_PTH_0_10");
-   _s_category_stxs.push_back("ggH_0J_PTH_10_200");
-   _s_category_stxs.push_back("ggH_1J_PTH_0_60");
-   _s_category_stxs.push_back("ggH_1J_PTH_60_120");
-   _s_category_stxs.push_back("ggH_1J_PTH_120_200");
-   _s_category_stxs.push_back("ggH_2J_PTH_0_60");
-   _s_category_stxs.push_back("ggH_2J_PTH_60_120");
-   _s_category_stxs.push_back("ggH_2J_PTH_120_200");
-   _s_category_stxs.push_back("ggH_PTH_200");
-   _s_category_stxs.push_back("ggH_VBF");
-   _s_category_stxs.push_back("VBF_1j");
-   _s_category_stxs.push_back("VBF_2j");
-   _s_category_stxs.push_back("VBF_2j_mjj_350_700_2j");
-   _s_category_stxs.push_back("VBF_2j_mjj_GT700_2j");
-   _s_category_stxs.push_back("VBF_2j_mjj_GT350_3j");
-   _s_category_stxs.push_back("VBF_GT200_2J");
-   _s_category_stxs.push_back("VH_Had");
-   _s_category_stxs.push_back("VBF_rest_VH");
-   _s_category_stxs.push_back("VH_lep_0_150");
-   _s_category_stxs.push_back("VH_Lep_GT150");
-   _s_category_stxs.push_back("ttH_Lep");
-   _s_category_stxs.push_back("ttH_Had");
+   //_s_category_stxs.push_back("ggH_0J_PTH_0_10");
+   //_s_category_stxs.push_back("ggH_0J_PTH_10_200");
+   //_s_category_stxs.push_back("ggH_1J_PTH_0_60");
+   //_s_category_stxs.push_back("ggH_1J_PTH_60_120");
+   //_s_category_stxs.push_back("ggH_1J_PTH_120_200");
+   //_s_category_stxs.push_back("ggH_2J_PTH_0_60");
+   //_s_category_stxs.push_back("ggH_2J_PTH_60_120");
+   //_s_category_stxs.push_back("ggH_2J_PTH_120_200");
+   //_s_category_stxs.push_back("ggH_PTH_200");
+   //_s_category_stxs.push_back("ggH_VBF");
+   //_s_category_stxs.push_back("VBF_1j");
+   //_s_category_stxs.push_back("VBF_2j");
+   //_s_category_stxs.push_back("VBF_2j_mjj_350_700_2j");
+   //_s_category_stxs.push_back("VBF_2j_mjj_GT700_2j");
+   //_s_category_stxs.push_back("VBF_2j_mjj_GT350_3j");
+   //_s_category_stxs.push_back("VBF_GT200_2J");
+   //_s_category_stxs.push_back("VH_Had");
+   //_s_category_stxs.push_back("VBF_rest_VH");
+   //_s_category_stxs.push_back("VH_lep_0_150");
+   //_s_category_stxs.push_back("VH_Lep_GT150");
+   //_s_category_stxs.push_back("ttH_Lep");
+   //_s_category_stxs.push_back("ttH_Had");
+   //_s_category_stxs.push_back("Inclusive");
+
+   //_s_category_stxs.push_back("noCat");
+
+   //_s_category_stxs.push_back("zerojet");
+   //_s_category_stxs.push_back("gt_zerojet");
+
+   _s_category_stxs.push_back("onejet");
+   _s_category_stxs.push_back("notonejet");
+   
+   //_s_category_stxs.push_back("twojet");
+   //_s_category_stxs.push_back("lt_twojet");
+   
    _s_category_stxs.push_back("Inclusive");
    
    _s_region.push_back("2P2F");
@@ -113,6 +126,7 @@ void OSmethod::FillFRHistos( TString input_file_data_name )
 	Int_t _passingSelection = 0;
 	Int_t _faillingSelection = 0;
 	Int_t _faillingJPsiMassCut = 0;
+   Int_t _faillingNj = 0;
 
    for (Long64_t jentry=0; jentry<nentries;jentry++)
    {
@@ -135,14 +149,22 @@ void OSmethod::FillFRHistos( TString input_file_data_name )
       if ( (LepSIP->at(2) > 4. || Lepdxy->at(2) > 0.5 || Lepdz->at(2) > 1.0) && (fabs(LepLepId->at(2)) == 11)) { _failSipVtxCut++; continue;} // Included dxy/dz cuts for ele       
       if ( (LepSIP->at(2) > 4. || Lepdxy->at(2) > 0.5 || Lepdz->at(2) > 1.0) && (fabs(LepLepId->at(2)) == 13)) { _failSipVtxCut++; continue;} // Included dxy/dz cuts for mu   
       // NB: Included SIP cut on muons that was removed when it was included in the muon BDT
-      if ( PFMET > 25. ) {_failMETCut++; continue;}
+      if ( MET > 25. ) {_failMETCut++; continue;}
       if ( (LepLepId->at(2) < 0 && LepLepId->at(0) > 0 && (p1+p3).M() < 4.) || (LepLepId->at(2) < 0 && LepLepId->at(1) > 0 && (p2+p3).M() < 4.) ) {_faillingJPsiMassCut++; continue;}
       if ( (LepLepId->at(2) > 0 && LepLepId->at(0) < 0 && (p1+p3).M() < 4.) || (LepLepId->at(2) > 0 && LepLepId->at(1) < 0 && (p2+p3).M() < 4.) ) {_faillingJPsiMassCut++; continue;}
+
+      if ( (LepLepId->at(2) > 0 && LepLepId->at(0) < 0 && (p1+p3).M() < 4.) || (LepLepId->at(2) > 0 && LepLepId->at(1) < 0 && (p2+p3).M() < 4.) ) {_faillingJPsiMassCut++; continue;}
+
+      if ( (LepLepId->at(2) > 0 && LepLepId->at(0) < 0 && (p1+p3).M() < 4.) || (LepLepId->at(2) > 0 && LepLepId->at(1) < 0 && (p2+p3).M() < 4.) ) {_faillingJPsiMassCut++; continue;}
+
+      if ( Nj != 1 ) {_faillingNj++; continue;} // SPENCER
+
       else
       {
          // Final event weight
-         _k_factor = calculate_K_factor(input_file_data_name);
-         _event_weight = (_lumi * 1000 * xsec * _k_factor * overallEventWeight * L1prefiringWeight) / gen_sum_weights;
+         //_k_factor = calculate_K_factor(input_file_data_name);
+         //_event_weight = (_lumi * 1000 * xsec * _k_factor * overallEventWeight * L1prefiringWeight) / gen_sum_weights;
+         _event_weight = (_lumi * 1000 * overallEventWeight) / gen_sum_weights;
 
          //if( LepisID->at(2) ) // Changed because we are not using BDT-based muon ID but PF+ISO            
          if(LepisID->at(2) && ((fabs(LepLepId->at(2)) == 11) ? LepCombRelIsoPF->at(2) < 999999. : LepCombRelIsoPF->at(2) < 0.35))
@@ -174,6 +196,7 @@ void OSmethod::FillFRHistos( TString input_file_data_name )
 		cout << "[INFO] Events lost after SIP < 4 cut and dxy-dz cuts  = " << _failSipVtxCut << endl;
 		cout << "[INFO] Events lost after MET < 25 cut  = " << _failMETCut << endl;
 		cout << "[INFO] Events lost after m_ll > 4 cut  = " << _faillingJPsiMassCut << endl;
+      cout << "[INFO] Events lost after Nj > 0 cut  = " << _faillingNj << endl;
 		cout << "[INFO] Total events left = " << _passingSelection + _faillingSelection << endl;
 		cout << "[INFO] Passing selection = " << _passingSelection  << endl;
 		cout << "[INFO] Failling selection = " << _faillingSelection << endl;
@@ -217,6 +240,7 @@ void OSmethod::FillDataMCPlots( TString input_file_data_name )
       
       _current_final_state = FindFinalState();
       
+      /*
       for ( int j = 0; j < nCleanedJetsPt30; j++)
       {
          jetPt[j] = JetPt->at(j);
@@ -254,10 +278,14 @@ void OSmethod::FillDataMCPlots( TString input_file_data_name )
                                                  ZZPt,
                                                  _current_category,
                                                  ZZjjPt);
-      
-      _k_factor = calculate_K_factor(input_file_data_name);
-      _event_weight = (_lumi * 1000 * xsec * _k_factor * overallEventWeight * L1prefiringWeight) / gen_sum_weights;
-      
+      */
+      //_current_category_stxs = noCategories ( );
+      _current_category_stxs = RUNIII ( Nj );
+
+      //_k_factor = calculate_K_factor(input_file_data_name);
+      //_event_weight = (_lumi * 1000 * xsec * _k_factor * overallEventWeight * L1prefiringWeight) / gen_sum_weights;
+      _event_weight = (_lumi * 1000 * overallEventWeight) / gen_sum_weights;
+
       if ( test_bit(CRflag, CRZLLos_2P2F) ) histos_1D[Settings::reg2P2F][_current_process][_current_final_state][_current_category_stxs]->Fill(ZZMass, (_current_process == Settings::Data) ? 1 :  _event_weight);
       if ( test_bit(CRflag, CRZLLos_3P1F) ) histos_1D[Settings::reg3P1F][_current_process][_current_final_state][_current_category_stxs]->Fill(ZZMass, (_current_process == Settings::Data) ? 1 :  _event_weight);
       if ( Z1Flav < 0 && Z2Flav < 0 )       histos_1D[Settings::regOS][_current_process][_current_final_state][_current_category_stxs]->Fill(ZZMass, (_current_process == Settings::Data) ? 1 :  _event_weight);
@@ -311,6 +339,7 @@ void OSmethod::MakeHistogramsZX( TString input_file_data_name, TString  input_fi
 
       _current_final_state = FindFinalState();
       
+      /*
       for ( int j = 0; j < nCleanedJetsPt30; j++)
       {
          jetPt[j] = JetPt->at(j);
@@ -348,7 +377,9 @@ void OSmethod::MakeHistogramsZX( TString input_file_data_name, TString  input_fi
                                                  ZZPt,
                                                  _current_category,
                                                  ZZjjPt);
-
+      */
+      //_current_category_stxs = noCategories ( );
+      _current_category_stxs = RUNIII ( Nj );
       if ( test_bit(CRflag, CRZLLos_2P2F) )
       {
 	//nevents_CRLLos_2P2F += 1;
@@ -440,6 +471,7 @@ void OSmethod::MakeZXMCContribution( TString input_file_data_name, TString  inpu
       
       _current_final_state = FindFinalState();
       
+      /*
       for ( int j = 0; j < nCleanedJetsPt30; j++)
       {
          jetPt[j] = JetPt->at(j);
@@ -477,10 +509,14 @@ void OSmethod::MakeZXMCContribution( TString input_file_data_name, TString  inpu
                                                  ZZPt,
                                                  _current_category,
                                                  ZZjjPt);
-      
-      _k_factor = calculate_K_factor(input_file_data_name);
-      _event_weight = (_lumi * 1000 * xsec * _k_factor * overallEventWeight * L1prefiringWeight) / gen_sum_weights;
-      
+      */
+      //_current_category_stxs = noCategories ( );
+      _current_category_stxs = RUNIII ( Nj );
+
+      //_k_factor = calculate_K_factor(input_file_data_name);
+      //_event_weight = (_lumi * 1000 * xsec * _k_factor * overallEventWeight * L1prefiringWeight) / gen_sum_weights;
+      _event_weight = (_lumi * 1000 * overallEventWeight) / gen_sum_weights;
+
       if( LepisID->at(3) && ((fabs(LepLepId->at(3)) == 11) ? LepCombRelIsoPF->at(3) < 999999. : LepCombRelIsoPF->at(3) < 0.35))
       {
 	_f4    = FR->GetFakeRate(LepPt->at(2),LepEta->at(2),LepLepId->at(2));
@@ -1260,6 +1296,7 @@ void OSmethod::PlotZXContributions( TString folder )
 
 
 //========================================================================================================
+
 void OSmethod::FitZX( TString folder )
 {
    TCanvas *c_zx;
@@ -1298,6 +1335,7 @@ void OSmethod::FitZX( TString folder )
    }
 	gStyle->SetOptFit(0);
 }
+
 //========================================================================================================
 
 
@@ -1607,7 +1645,7 @@ int OSmethod::find_current_process( TString input_file_name )
    if ( input_file_name.Contains("ZZTo4l") )         current_process = Settings::qqZZ;
    if ( input_file_name.Contains("DYJetsToLL") )     current_process = Settings::DY;
    if ( input_file_name.Contains("TTJets") )         current_process = Settings::ttbar;
-   if ( input_file_name.Contains("TTTo2L2Nu") )      current_process = Settings::ttbar;
+   if ( input_file_name.Contains("TTto2L2Nu") )      current_process = Settings::ttbar;
    
    return current_process;
 }
@@ -1655,11 +1693,13 @@ float OSmethod::calculate_K_factor(TString input_file_name)
    
    if ( input_file_name.Contains("ZZTo4l"))
    {
-      k_factor = KFactor_EW_qqZZ * KFactor_QCD_qqZZ_M; // As of Moriond2016
+      // k_factor = KFactor_EW_qqZZ * KFactor_QCD_qqZZ_M; // As of Moriond2016 // KFactor_EW_qqZZ DNE FOR RUN III
+         k_factor = KFactor_QCD_qqZZ_M_weight; // KFactor_EW_qqZZ DNE FOR RUN III
    }
    else if ( input_file_name.Contains("ggTo"))
    {
-      k_factor = KFactor_QCD_ggZZ_Nominal; // as of Moriond2016
+      // k_factor = KFactor_QCD_ggZZ_Nominal; // as of Moriond2016
+      k_factor = KFactor_QCD_ggZZ_Nominal_weight;
    }
    return k_factor;
 }

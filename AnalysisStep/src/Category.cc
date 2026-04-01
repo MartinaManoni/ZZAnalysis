@@ -18,6 +18,23 @@ using namespace std;
 float bins_hpt4[]={0,60,120,200};
 TH1F *hpt_bin=new TH1F("hpt_bin","",3, bins_hpt4);
 
+extern "C" int noCategories( ) {
+  return 0;
+}
+
+extern "C" int RUNIII( int Nj ) {
+
+  //if ( Nj == 0 ) return zerojet;
+  //else return gt_zerojet;
+
+  if ( Nj == 1 ) return onejet;
+  else return notonejet;
+
+  //if ( Nj >= 2 ) return twojet;
+  //else return lt_twojet;
+
+}
+
 extern "C" int categoryLegacy( int nCleanedJetsPt30 )
 {
   if(VERBOSE) cout << "WARNING: using deprecated categorization function 'categoryLegacy'" << endl;

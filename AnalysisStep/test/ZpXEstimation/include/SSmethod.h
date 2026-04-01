@@ -112,7 +112,7 @@ private:
    Long64_t n_gen_events;
    
    vector<string> _s_process, _s_flavour, _s_final_state, _s_category, _s_category_stxs, _s_region;
-   vector<float> _fs_ROS_SS;
+   float _fs_ROS_SS[num_of_final_states][num_of_categories_stxs];
    vector< vector <float> > _expected_yield_SR,_expected_yield_SR_up,_expected_yield_SR_dn, _number_of_events_CR;
    
    TString _histo_name, _histo_labels;
