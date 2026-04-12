@@ -5,19 +5,18 @@ ROOT.gStyle.SetOptStat(0)
 # =========================================================
 # YEAR SELECTION
 # =========================================================
-year = "2023preBPix"
-# "2022", "2022EE", "2023preBpix", "2023postBpix"
-
+year = "2022"
 
 # =========================================================
 # FILE PATH BUILDER
 # =========================================================
-base_path = "root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/cmshzz4l/cjlst/HIG-25-015/RunIII_byZ1Z2/Moriond26_JES"
-
+#base_path = "root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/cmshzz4l/cjlst/HIG-25-015/RunIII_byZ1Z2/Moriond26_JES"
+base_path = "root://eosuser.cern.ch//eos/user/m/mmanoni/ZX_studies"
+# /eos/user/m/mmanoni/ZX_studies/2022_MC/DYJetsToLL/ZZ4lAnalysis_SKIMMED.root 
 file_map = {
     "2022": {
         "DY": f"{base_path}/2022_MC/DYJetsToLL/ZZ4lAnalysis_SKIMMED.root",
-        "TT": f"{base_path}/2022_MC/TTto2L2Nu/ZZ4lAnalysis_SKIMMED.root",
+        #"TT": f"{base_path}/2022_MC/TTto2L2Nu/ZZ4lAnalysis_SKIMMED.root",
     },
     "2022EE": {
         "DY": f"{base_path}/2022EE_MC/DYJetsToLL/ZZ4lAnalysis_SKIMMED.root",
@@ -34,8 +33,7 @@ file_map = {
 }
 
 file_DY = file_map[year]["DY"]
-file_TT = file_map[year]["TT"]
-
+#file_TT = file_map[year]["TT"]
 
 # =========================================================
 # Helper functions
@@ -56,6 +54,15 @@ def set_range(hlist):
         h.SetMaximum(ymax * 1.2)
         h.SetMinimum(0)
 
+# =========================================================
+# NEW: flavour histogram helper
+# =========================================================
+def get_flavour_hist(df, tag, region):
+    return df.Histo1D(
+        (f"flav_{tag}_{region}", "Jet flavour;Flavour;Jets", 10, 0, 10),
+        "jet_partonFlavour",
+        "w"
+    )
 
 # =========================================================
 # Build DataFrames
@@ -78,11 +85,10 @@ def build_dfs(file):
 
 
 df_SR_DY, regions_DY = build_dfs(file_DY)
-df_SR_TT, regions_TT = build_dfs(file_TT)
-
+#df_SR_TT, regions_TT = build_dfs(file_TT)
 
 # =========================================================
-# Build Histograms
+# Build Histograms (UNCHANGED)
 # =========================================================
 def make_histos(df_SR, regions, tag):
     h_Nj = {}
@@ -99,11 +105,10 @@ def make_histos(df_SR, regions, tag):
 
 
 h_Nj_DY, h_M_DY = make_histos(df_SR_DY, regions_DY, "DY")
-h_Nj_TT, h_M_TT = make_histos(df_SR_TT, regions_TT, "TT")
-
+#h_Nj_TT, h_M_TT = make_histos(df_SR_TT, regions_TT, "TT")
 
 # =========================================================
-# Styling
+# Styling (UNCHANGED)
 # =========================================================
 colors = {
     "SR": ROOT.kBlack,
@@ -117,12 +122,11 @@ for key in h_Nj_DY:
     style(h_Nj_DY[key], colors[key])
     style(h_M_DY[key],  colors[key])
 
-    style(h_Nj_TT[key], colors[key], dashed=True)
-    style(h_M_TT[key],  colors[key], dashed=True)
-
+    #style(h_Nj_TT[key], colors[key], dashed=True)
+    #style(h_M_TT[key],  colors[key], dashed=True)
 
 # =========================================================
-# Plotting functions
+# Plotting functions (UNCHANGED)
 # =========================================================
 def plot_process(h_Nj, h_M, label):
 
@@ -161,13 +165,15 @@ def plot_process(h_Nj, h_M, label):
 
     c2.SaveAs(f"m4l_{label}_{year}_comparison.png")
 
-
+# =========================================================
+# Plot overlay (UNCHANGED)
+# =========================================================
 def plot_overlay(h_DY, h_TT, var):
 
     for region in ["SR","3P1F","2P2F","SS","SIP"]:
 
         h1 = h_DY[region]
-        h2 = h_TT[region]
+        #h2 = h_TT[region]
 
         normalize(h1)
         normalize(h2)
@@ -181,17 +187,66 @@ def plot_overlay(h_DY, h_TT, var):
 
         leg = ROOT.TLegend(0.65,0.75,0.88,0.88)
         leg.AddEntry(h1.GetPtr(), f"DY {region}", "l")
-        leg.AddEntry(h2.GetPtr(), f"TT {region}", "l")
+        #leg.AddEntry(h2.GetPtr(), f"TT {region}", "l")
         leg.Draw()
 
         c.SaveAs(f"{var}_{region}_DY_vs_TT_{year}.png")
 
+# =========================================================
+# NEW: FLAVOUR PERCENTAGE COMPUTATION
+# =========================================================
+def compute_flavour(fr_dict, tag):
+
+    out = {}
+
+    for region, df in fr_dict.items():
+
+        h = get_flavour_hist(df, tag, region).GetValue()
+
+        total = h.Integral()
+
+        if total > 0:
+            for i in range(1, h.GetNbinsX()+1):
+                h.SetBinContent(i, 100.0 * h.GetBinContent(i) / total)
+
+        out[region] = h
+
+    return out
 
 # =========================================================
-# Run everything
+# NEW: RUN FLAVOUR STUDY
+# =========================================================
+flav_DY = compute_flavour(regions_DY, "DY")
+#flav_TT = compute_flavour(regions_TT, "TT")
+
+# =========================================================
+# OPTIONAL DRAWING (NEW)
+# =========================================================
+def draw_flav(flav, tag):
+
+    for region, h in flav.items():
+
+        c = ROOT.TCanvas(f"c_flav_{tag}_{region}", "", 700, 600)
+
+        h.GetXaxis().SetTitle("Jet flavour (PDG)")
+        h.GetYaxis().SetTitle("% jets")
+
+        h.SetLineColor(ROOT.kBlack)
+        h.SetFillColor(ROOT.kAzure+1)
+
+        h.Draw("hist")
+
+        c.SaveAs(f"flavour_{tag}_{region}_{year}.png")
+
+
+draw_flav(flav_DY, "DY")
+#draw_flav(flav_TT, "TTbar")
+
+# =========================================================
+# Run everything (UNCHANGED)
 # =========================================================
 plot_process(h_Nj_DY, h_M_DY, "DY")
-plot_process(h_Nj_TT, h_M_TT, "TTbar")
+#plot_process(h_Nj_TT, h_M_TT, "TTbar")
 
-plot_overlay(h_Nj_DY, h_Nj_TT, "Nj")
-plot_overlay(h_M_DY,  h_M_TT,  "m4l")
+#plot_overlay(h_Nj_DY, h_Nj_TT, "Nj")
+#plot_overlay(h_M_DY,  h_M_TT,  "m4l")
