@@ -61,11 +61,11 @@ SSmethod::SSmethod():Tree()
 
    //_s_category_stxs.push_back("noCat");
 
-   //_s_category_stxs.push_back("zerojet");
-   //_s_category_stxs.push_back("gt_zerojet");
+   _s_category_stxs.push_back("zerojet");
+   _s_category_stxs.push_back("gt_zerojet");
 
-   _s_category_stxs.push_back("onejet");
-   _s_category_stxs.push_back("notonejet");
+   //_s_category_stxs.push_back("onejet");
+   //_s_category_stxs.push_back("notonejet");
    
    //_s_category_stxs.push_back("twojet");
    //_s_category_stxs.push_back("lt_twojet");
@@ -116,6 +116,16 @@ SSmethod::~SSmethod()
 //================================================================================================
 void SSmethod::Calculate_SSOS_Ratio( TString input_file_data_name, TString input_file_MC_name , bool subtractMC )
 {
+
+   // Compute OS/SS transfer factor in the ZLL control region (CRZLLTree).
+   // Counts events passing CR flags:
+   //   - SS: CRZLLss (same-sign, fake-dominated)
+   //   - OS: CRZLLos_2P2F and CRZLLos_3P1F (opposite-sign, 2P2F/3P1F)
+   // Events are categorized by final state and jet multiplicity (RUNIII(Nj)).
+   // Optionally subtracts qqZZ MC contribution from OS yield.
+   // Stores R_OS/SS = N_OS / N_SS per (final state, Nj category).
+   // This factor converts SS yields into OS predictions for Z+X estimation.
+
    input_file_data = TFile::Open( input_file_data_name);
    input_file_MC   = TFile::Open( input_file_MC_name);
    
@@ -349,6 +359,20 @@ void SSmethod::Calculate_SSOS_Ratio( TString input_file_data_name, TString input
 //===============================================================================
 void SSmethod::FillFRHistos( TString input_file_data_name )
 {
+   // Measure lepton fake rates in the Z+L control region (CRZLTree).
+   // Applies selection:
+   //   - 40 < Z1Mass < 120
+   //   - leading/subleading pT thresholds (20/10 GeV)
+   //   - |eta| < 2.5
+   //   - SIP < 4, dxy/dz cuts
+   //   - MET < 25
+   //   - Nj == 0/1/>=2 categories (RUNIII(Nj))
+   // The third lepton is classified as:
+   //   - "tight"  : LepisID && (iso < 0.35 for muons, no iso cut for electrons)
+   //   - "loose"  : fails tight
+   // Fills pT–eta histograms for passing (tight) and failing (loose-not-tight) leptons.
+   // These histograms are later used to compute FR: Fake rate is computed as FR(pT, eta) = N_tight / (N_tight + N_loose).
+
    input_file_data = TFile::Open(input_file_data_name);
    
    hCounters = (TH1F*)input_file_data->Get("CRZLTree/Counters");
@@ -410,7 +434,7 @@ void SSmethod::FillFRHistos( TString input_file_data_name )
       // NB: Included SIP cut on muons that was removed when it was included in the muon BDT                                                        
       else if ( MET > 25. ) {(fabs(LepLepId->at(2)) == 11) ? _failMETCut[Settings::ele]++ : _failMETCut[Settings::mu]++; continue;}
 
-      else if ( Nj != 1 ) {(fabs(LepLepId->at(2)) == 11) ? _faillingNj[Settings::ele]++ : _faillingNj[Settings::mu]++ ; continue;} // SPENCER
+      else if ( Nj != 0 ) {(fabs(LepLepId->at(2)) == 11) ? _faillingNj[Settings::ele]++ : _faillingNj[Settings::mu]++ ; continue;} // ( Nj != 0 ) --- ( Nj != 1 ) -----( Nj < 2 )
 
       else
 	{
@@ -581,6 +605,8 @@ void SSmethod::MakeHistogramsZX( TString input_file_data_name, TString  input_fi
    
    
    if (fChain == 0) return;
+
+   int debug_counter = 0;
    
    Long64_t nentries = fChain->GetEntriesFast();
    
@@ -660,7 +686,26 @@ void SSmethod::MakeHistogramsZX( TString input_file_data_name, TString  input_fi
       _yield_SR_up = _fs_ROS_SS[_current_final_state][_current_category_stxs]*FR->GetFakeRate_Up(LepPt->at(2),LepEta->at(2),LepLepId->at(2))*FR->GetFakeRate_Up(LepPt->at(3),LepEta->at(3),LepLepId->at(3));
       _yield_SR_dn = _fs_ROS_SS[_current_final_state][_current_category_stxs]*FR->GetFakeRate_Dn(LepPt->at(2),LepEta->at(2),LepLepId->at(2))*FR->GetFakeRate_Dn(LepPt->at(3),LepEta->at(3),LepLepId->at(3));
       
-      
+      float fr3 = FR->GetFakeRate(LepPt->at(2),LepEta->at(2),LepLepId->at(2));
+      float fr4 = FR->GetFakeRate(LepPt->at(3),LepEta->at(3),LepLepId->at(3));
+      float ros = _fs_ROS_SS[_current_final_state][_current_category_stxs];
+
+      if (debug_counter < 50)
+      {
+         cout << "[DEBUG] Event #" << debug_counter << endl;
+         cout << "  Final state: " << _s_final_state.at(_current_final_state) << endl;
+         cout << "  Category: " << _s_category_stxs.at(_current_category_stxs) << endl;
+         cout << "  Lep3 pT = " << LepPt->at(2) << " eta = " << LepEta->at(2) << " ID = " << LepLepId->at(2) << endl;
+         cout << "  Lep4 pT = " << LepPt->at(3) << " eta = " << LepEta->at(3) << " ID = " << LepLepId->at(3) << endl;
+         cout << "  ROS/SS = " << ros << endl;
+         cout << "  FR3 = " << fr3 << endl;
+         cout << "  FR4 = " << fr4 << endl;
+         cout << "  Yield contribution = " << _yield_SR << endl;
+         cout << "----------------------------------------" << endl;
+
+         debug_counter++;
+      }
+
       _expected_yield_SR[_current_final_state][_current_category_stxs]    += _yield_SR;
       _expected_yield_SR_up[_current_final_state][_current_category_stxs] += _yield_SR_up;
       _expected_yield_SR_dn[_current_final_state][_current_category_stxs] += _yield_SR_dn;
@@ -1064,6 +1109,24 @@ void SSmethod::GetZXHistos( TString file_name)
 //===============================================================
 void SSmethod::ProduceFakeRates( TString file_name , TString input_file_data_name /*= "DONT_CORRECT"*/)
 {
+   //===============================================================
+// Produces fake rate (FR) graphs as a function of lepton pT.
+// 
+// For each pT bin and flavour (electron/muon):
+// - Integrates "passing" and "failing" histograms
+// - Computes fake rate: FR = N_pass / (N_pass + N_fail)
+// - Propagates statistical uncertainties
+//
+// Builds TGraphErrors for:
+//   - Corrected fake rates (after background subtraction)
+//   - Uncorrected fake rates (data only, no subtraction)
+//
+// Electron fake rates can be further corrected using missing hit information
+// if an input data file is provided.
+// 
+// Final graphs are saved to an output ROOT file and optionally plotted.
+//===============================================================
+
    for(int i_pT_bin = 0; i_pT_bin < _n_pT_bins - 1; i_pT_bin++ )
    {
       double temp_NP = 0;
@@ -1224,6 +1287,20 @@ void SSmethod::ProduceFakeRates( TString file_name , TString input_file_data_nam
 //========================================================================
 void SSmethod::CorrectElectronFakeRate( TString input_file_data_name )
 {
+
+//===============================================================
+// Applies a correction to electron fake rates based on the
+// dependence of fake rate on the number of missing hits.
+//
+// Steps:
+// 1. Compute fake rate vs missing hits from data
+// 2. Fit this dependence for each (pT, eta) bin
+// 3. Apply the resulting correction to final fake rates
+//
+// This correction accounts for differences in tracking quality
+// between samples, improving the accuracy of electron fake rates.
+//===============================================================
+
 	TGraphErrors *FR_MissingHits_graph[num_of_eta_bins][99];
 	
 	Calculate_FR_nMissingHits(input_file_data_name, FR_MissingHits_graph);
@@ -1238,6 +1315,28 @@ void SSmethod::CorrectElectronFakeRate( TString input_file_data_name )
 //========================================================================
 void SSmethod::Calculate_FR_nMissingHits( TString input_file_data_name, TGraphErrors *FR_MissingHits_graph[99][99] )
 {
+
+//===============================================================
+// Computes fake rate as a function of the number of missing hits.
+//
+// Procedure:
+// - Loops over events in the input data TTree
+// - Selects electron candidates passing analysis cuts
+// - For each (pT, eta, Z-mass region):
+//     * Counts passing and failing electrons
+//     * Accumulates number of missing hits
+//
+// Then:
+// - Computes average missing hits per bin
+// - Computes fake rate: FR = N_pass / (N_pass + N_fail)
+// - Builds TGraphErrors with:
+//     X = average missing hits
+//     Y = fake rate
+//
+// Output graphs are used to model the dependence of fake rate
+// on tracking quality (missing hits).
+//===============================================================
+   
 	input_file_data = TFile::Open( input_file_data_name);
 	
 	hCounters = (TH1F*)input_file_data->Get("CRZLTree/Counters");
@@ -1279,6 +1378,7 @@ void SSmethod::Calculate_FR_nMissingHits( TString input_file_data_name, TGraphEr
 		if ( (LepPt->at(1) > LepPt->at(0)) && (LepPt->at(1) < 20. || LepPt->at(0) < 10.) ) continue;
 		if ( LepSIP->at(2) > 4. || Lepdxy->at(2) > 0.5 || Lepdz->at(2) > 1.0) continue;
 		if ( MET > 25. ) continue;
+      if ( Nj != 0 ) continue; // ( Nj != 0 ) --- ( Nj != 1 ) -----( Nj < 2 )
 		else
 		{
 			_current_pT_bin = Find_Ele_pT_bin ( LepPt->at(2) );
@@ -1310,7 +1410,7 @@ void SSmethod::Calculate_FR_nMissingHits( TString input_file_data_name, TGraphEr
 			p2.SetPtEtaPhiM(LepPt->at(1), LepEta->at(1), LepPhi->at(1), 0.);
 			p3.SetPtEtaPhiM(LepPt->at(2), LepEta->at(2), LepPhi->at(2), 0.);
 			
-			if ( abs( ((p1+p2)+p3).M() - 91.2 ) < 5. )//3 lepton mass
+			if ( abs( ((p1+p2)+p3).M() - 91.2 ) < 30. )//3 lepton mass
 			{
 				_N_MissingHits[Settings::_MZ1EmMZtrue_5][_current_eta_bin][_current_pT_bin] += LepMissingHit->at(2);
 				if(LepisID->at(2) ) _N_Passing[Settings::_MZ1EmMZtrue_5][_current_eta_bin][_current_pT_bin] += 1.;
@@ -1376,16 +1476,42 @@ void SSmethod::Calculate_FR_nMissingHits( TString input_file_data_name, TGraphEr
 //============================================================================
 void SSmethod::Fit_FRnMH_graphs(TGraphErrors *FR_MissingHits_graph[99][99])
 {
+
+//===============================================================
+// Fits fake rate vs missing hits graphs for each (pT, eta) bin.
+//
+// Each graph is fitted with a linear function:
+//     FR = a * (missing hits) + b
+//
+// The fit provides a parametric model describing how fake rate
+// depends on tracking quality.
+//
+// The fitted functions are stored and later used to correct
+// the final electron fake rates.
+//
+// Diagnostic plots of the fits are also produced and saved.
+//===============================================================
 	for ( int i_pt = 0; i_pt < _n_pT_bins-2; i_pt++)
 	{
 		for ( int i_eta = 0; i_eta < num_of_eta_bins; i_eta++)
 		{
 			TString func_name;
 			func_name.Form("FR_MissingHits_func_eta_%d_pT_%d",i_eta,i_pt);
-			Ele_FR_correction_function[i_eta][i_pt] = new TF1(func_name,"[0]*x+[1]",0,3);
-			Ele_FR_correction_function[i_eta][i_pt]->SetParameter(0,1.);
-			Ele_FR_correction_function[i_eta][i_pt]->SetParameter(1,0.);
-			//if ((i_pt == 4 || i_pt == 5) && (i_eta == 0)) Ele_FR_correction_function[i_eta][i_pt]->FixParameter(1,0.); // PATCH
+			if ((i_pt == 5) && (i_eta == 5))
+            {
+               Ele_FR_correction_function[i_eta][i_pt] =
+                  new TF1(func_name, "[0]", 0, 3);   // FLAT FUNCTION
+
+               Ele_FR_correction_function[i_eta][i_pt]->SetParameter(0, 0.1);
+            }
+         else
+            {
+               Ele_FR_correction_function[i_eta][i_pt] =
+                  new TF1(func_name, "[0]*x+[1]", 0, 3);
+
+               Ele_FR_correction_function[i_eta][i_pt]->SetParameter(0, 1.);
+               Ele_FR_correction_function[i_eta][i_pt]->SetParameter(1, 0.);
+            }
 			
 			FR_MissingHits_graph[i_eta][i_pt]->Fit(Ele_FR_correction_function[i_eta][i_pt], "Q");
 			
@@ -1591,7 +1717,7 @@ void SSmethod::PlotFR()
 	mg_electrons->GetXaxis()->SetTitle("p_{T} [GeV]");
 	mg_electrons->GetYaxis()->SetTitle("Fake Rate");
 	mg_electrons->SetTitle("Electron fake rate");
-   mg_electrons->SetMaximum(0.35);
+   mg_electrons->SetMaximum(0.35);//set max martina
    leg_ele = CreateLegend_FR("left",FR_SS_electron_EB_unc,FR_SS_electron_EB,FR_SS_electron_EE_unc,FR_SS_electron_EE);
    leg_ele->Draw();
    system("mkdir -p Plots");
@@ -1603,7 +1729,7 @@ void SSmethod::PlotFR()
 	mg_muons->GetXaxis()->SetTitle("p_{T} [GeV]");
 	mg_muons->GetYaxis()->SetTitle("Fake Rate");
 	mg_muons->SetTitle("Muon fake rate");
-   mg_muons->SetMaximum(0.35);
+   mg_muons->SetMaximum(1.0);
    leg_mu = CreateLegend_FR("left",FR_SS_muon_EB_unc,FR_SS_muon_EB,FR_SS_muon_EE_unc,FR_SS_muon_EE);
    leg_mu->Draw();
    SavePlots(c_mu, "Plots/FR_SS_muons");

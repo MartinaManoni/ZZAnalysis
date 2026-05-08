@@ -12,11 +12,11 @@ extern "C" int noCategories( );
 
 enum RUNIII {
 
-  //zerojet = 0,
-  //gt_zerojet = 1
+  zerojet = 0,
+  gt_zerojet = 1
 
-  onejet = 0,
-  notonejet = 1
+  //onejet = 0,
+  //notonejet = 1
 
   //twojet = 0,
   //lt_twojet = 1,

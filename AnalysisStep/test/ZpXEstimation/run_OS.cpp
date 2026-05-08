@@ -21,7 +21,7 @@ int main( int argc, char *argv[] )
 {
    setTDRStyle();
 
-   TString YEAR = "2024";
+   TString YEAR = "2022";
    
    TString Data;
    if ( YEAR == "2022" ) { Data = "/eos/cms/store/group/phys_higgs/cmshzz4l/cjlst/HIG-25-015/RunIII_byZ1Z2/Moriond26_JES/2022_Data/Data_eraCD_preEE_SKIMMED.root"; }

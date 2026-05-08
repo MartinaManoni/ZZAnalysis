@@ -24,11 +24,11 @@ extern "C" int noCategories( ) {
 
 extern "C" int RUNIII( int Nj ) {
 
-  //if ( Nj == 0 ) return zerojet;
-  //else return gt_zerojet;
+  if ( Nj == 0 ) return zerojet;
+  else return gt_zerojet;
 
-  if ( Nj == 1 ) return onejet;
-  else return notonejet;
+  //if ( Nj == 1 ) return onejet;
+  //else return notonejet;
 
   //if ( Nj >= 2 ) return twojet;
   //else return lt_twojet;
