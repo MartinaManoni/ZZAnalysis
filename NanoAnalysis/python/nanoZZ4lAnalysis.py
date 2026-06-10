@@ -61,7 +61,7 @@ FILTER_EVENTS = getConf("FILTER_EVENTS", 'Cands') # Filter to be applied on even
                                                   # '3L_20_10' = any event with  with 3 good leptons, pt1>20, pt2>10 (useful for trigger studies)
                                                   # 'NoFilter' = no additional filtering (besides trigger, PV filter)
 
-CANDSTOSTORE = getConf("CANDSTOSTORE", 'BestCandOnly') # which candidates should be stored in the ZZCand collection:
+CANDSTOSTORE = getConf("CANDSTOSTORE", 'AllWithRelaxedMuId') # which candidates should be stored in the ZZCand collection:
                                                   # 'BestCandOnly' = only the best SR candidate in the event is saved (default)
                                                   # 'AllCands' = keep all SR candidates passing the full selection and analysis cuts
                                                   #   (including permutations of leptons).
@@ -306,7 +306,7 @@ ZZSequence = pre_sequence + reco_sequence + post_sequence
 
 if CANDSTOSTORE == 'AllWithRelaxedMuId' : # Add extra variables for ID studies
     from ZZAnalysis.NanoAnalysis.ZZIDStudies import *
-    insertAfter(ZZSequence, 'ZZFiller', ZZIDStudies())
+    insertAfter(ZZSequence, 'ZZFiller', ZZIDStudies(doMuons=False, doElectrons=True))
 
 ### Branches to be read and written to output
 branchsel_in = ['drop FatJet_*',

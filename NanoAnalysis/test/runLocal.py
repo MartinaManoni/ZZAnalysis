@@ -40,8 +40,8 @@ SampleToRun = "MC2022EE"
 #setConf("APPLY_K_NNLOEW_ZZQQB", True)
 #setConf("APPLY_QCD_GGF_UNCERT", True)
 
-setConf("PROCESS_CR", True)
-setConf("PROCESS_ZL", True)
+setConf("PROCESS_CR", False)
+setConf("PROCESS_ZL", False)
 setConf("DEBUG", False)
 setConf("SYNCMODE", True) # Force muon resolution correction with fixed +1 sigma smearing
 #setConf("ADD_ALLEVENTS", True) # Add extra tree of gen info for all events
@@ -145,6 +145,7 @@ elif SampleToRun == "MC2022EE" :
     setConf("DATA_TAG", "")
     setConf("XSEC", 52.23*0.0002745)
     setConf("LEPTON_SETUP", 2022)
+    setConf("PROCESS_CR", False)
     setConf("IsMC", True)
     setConf("store","root://cms-xrd-global.cern.ch/")
     setConf("APPLY_QCD_GGF_UNCERT", True) # for ggH
